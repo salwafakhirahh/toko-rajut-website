@@ -3,15 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiArrowLeft, FiMinus, FiPlus, FiStar } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getProductById, addToCart } from '../services/supabaseClient';
-import { getGuestId } from '../utils/guestId';
+import { useAuth } from './contexts/AuthContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+
+const GUEST_ID = '00000000-0000-0000-0000-000000000000';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+
+  const userId = user?.id || GUEST_ID;
 
   useEffect(() => {
     fetchProduct();
@@ -32,7 +37,7 @@ const ProductDetailPage = () => {
     const loadingToast = toast.loading('Menambahkan ke keranjang...');
     try {
       await addToCart({
-        user_id: getGuestId(),
+        user_id: userId,
         product_id: product.id,
         quantity: quantity,
       });

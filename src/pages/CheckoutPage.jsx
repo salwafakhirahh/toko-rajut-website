@@ -2,22 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getCart, createOrder, clearCart } from '../services/supabaseClient';
-import { getGuestId } from '../utils/guestId';
+import { useAuth } from './contexts/AuthContext';
 import CheckoutForm from '../components/checkout/CheckoutForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+
+const GUEST_ID = '00000000-0000-0000-0000-000000000000';
 
 const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const userId = user?.id || GUEST_ID;
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [user]);
 
   const fetchCart = async () => {
     try {
-      const data = await getCart(getGuestId());
+      const data = await getCart(userId);
       setCartItems(data);
     } catch (error) {
       console.error('Error:', error);
@@ -36,12 +41,12 @@ const CheckoutPage = () => {
       );
 
       const order = {
-        user_id: getGuestId(),
+        user_id: userId,
         order_number: `ORD-${Date.now()}`,
         total_amount: total,
         status: 'pending',
         delivery_method: data.method,
-        pickup_location: data.method === 'pickup' ? 'Urban Knitters' : null,
+        pickup_location: data.method === 'pickup' ? 'Toko Rajut' : null,
         delivery_address: data.method === 'delivery' ? data.address : null,
         customer_name: data.name,
         customer_phone: data.phone,
@@ -49,7 +54,7 @@ const CheckoutPage = () => {
       };
 
       await createOrder(order);
-      await clearCart(getGuestId());
+      await clearCart(userId);
 
       toast.success('Pesanan berhasil dibuat!', { id: loadingToast });
       setTimeout(() => navigate('/toko'), 2000);

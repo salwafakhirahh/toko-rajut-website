@@ -3,22 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import { FiShoppingBag } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getCart, updateCartItem, removeFromCart } from '../services/supabaseClient';
-import { getGuestId } from '../utils/guestId';
+import { useAuth } from './contexts/AuthContext';
 import CartItem from '../components/customer/CartItem';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+
+const GUEST_ID = '00000000-0000-0000-0000-000000000000';
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const userId = user?.id || GUEST_ID;
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [user]);
 
   const fetchCart = async () => {
     try {
-      const data = await getCart(getGuestId());
+      const data = await getCart(userId);
       setCartItems(data);
     } catch (error) {
       console.error('Error:', error);
