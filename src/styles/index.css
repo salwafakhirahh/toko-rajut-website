@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #F9F5F0;
+  --color-roseQuartz: #FACCD9;
+  --color-dustyRose: #FBAF46;
+  --color-coral: #F79480;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--color-cream);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    background-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .glass-card {
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-card:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+  }
+}

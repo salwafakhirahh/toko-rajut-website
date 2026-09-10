@@ -1,0 +1,42 @@
+/* Admin Dashboard Styles */
+
+.admin-card {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.admin-card:hover {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1F2937;
+  font-size: 0.875rem;
+}
+
+.admin-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: #4B5563;
+  font-size: 0.875rem;
+}
+
+.admin-table tr:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
