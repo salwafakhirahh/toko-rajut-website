@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiEdit, FiTrash2, FiSearch } from 'react-icons/fi';
+import {
+  FiPlus, FiEdit, FiTrash2, FiSearch, FiEye, FiStar
+} from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import ConfirmModal from '../common/ConfirmModal';
@@ -65,7 +67,12 @@ const ProductManagement = () => {
   return (
     <AdminLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Manajemen Produk</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Manajemen Produk</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Total: {products.length} produk
+          </p>
+        </div>
         <Link
           to="/toko/admin/products/add"
           className="flex items-center gap-2 px-4 py-2 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all"
@@ -97,13 +104,14 @@ const ProductManagement = () => {
                 <th>Diskon</th>
                 <th>Harga Diskon</th>
                 <th>Stok</th>
+                <th>Rating</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-4">
+                  <td colSpan="9" className="text-center py-4">
                     Tidak ada produk
                   </td>
                 </tr>
@@ -124,7 +132,9 @@ const ProductManagement = () => {
                           className="w-12 h-12 object-cover rounded"
                         />
                       </td>
-                      <td className="font-medium text-gray-800">{product.name}</td>
+                      <td className="font-medium text-gray-800">
+                        {product.name}
+                      </td>
                       <td>{product.categories?.name || '-'}</td>
                       <td className="text-gray-700">
                         Rp {product.price?.toLocaleString('id-ID')}
@@ -155,18 +165,37 @@ const ProductManagement = () => {
                         </span>
                       </td>
                       <td>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-1">
+                          <FiStar className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                          <span className="text-xs font-semibold">
+                            {product.rating?.toFixed(1) || '0.0'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() =>
+                              navigate(`/toko/admin/products/detail/${product.id}`)
+                            }
+                            className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Lihat Detail"
+                          >
+                            <FiEye />
+                          </button>
                           <button
                             onClick={() =>
                               navigate(`/toko/admin/products/edit/${product.id}`)
                             }
-                            className="p-2 text-blue-500 hover:text-blue-700"
+                            className="p-2 text-blue-500 hover:text-blue-700 transition-colors"
+                            title="Edit"
                           >
                             <FiEdit />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(product.id)}
-                            className="p-2 text-red-500 hover:text-red-700"
+                            className="p-2 text-red-500 hover:text-red-700 transition-colors"
+                            title="Hapus"
                           >
                             <FiTrash2 />
                           </button>
