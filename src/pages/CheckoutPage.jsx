@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { getCart, createOrder, clearCart } from '../services/supabaseClient';
-import { useAuth } from './contexts/AuthContext';
+import { getCart, createOrder, clearCart, supabase } from '../services/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import { calculateSubtotal, calculateFinalPrice } from '../utils/priceHelper';
 import CheckoutForm from '../components/checkout/CheckoutForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-
-const GUEST_ID = '00000000-0000-0000-0000-000000000000';
 
 const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const userId = user?.id || GUEST_ID;
+  const { user, isAdmin } = useAuth();
 
   useEffect(() => {
+    if (isAdmin) {
+      toast.error('Admin tidak dapat melakukan checkout');
+      setTimeout(() => navigate('/toko/admin/dashboard'), 1500);
+      return;
+    }
+    if (!user) {
+      toast.error('Silakan login terlebih dahulu untuk checkout');
+      setTimeout(() => navigate('/toko/login'), 1500);
+      return;
+    }
     fetchCart();
-  }, [user]);
+  }, [user, isAdmin, navigate]);
 
   const fetchCart = async () => {
     try {
-      const data = await getCart(userId);
+      const data = await getCart(user.id);
       setCartItems(data);
     } catch (error) {
       console.error('Error:', error);
@@ -36,12 +44,12 @@ const CheckoutPage = () => {
 
     try {
       const total = cartItems.reduce(
-        (sum, item) => sum + (item.products?.price || 0) * item.quantity,
+        (sum, item) => sum + calculateSubtotal(item.products, item.quantity),
         0
       );
 
       const order = {
-        user_id: userId,
+        user_id: user.id,
         order_number: `ORD-${Date.now()}`,
         total_amount: total,
         status: 'pending',
@@ -53,8 +61,25 @@ const CheckoutPage = () => {
         customer_message: data.message || '',
       };
 
-      await createOrder(order);
-      await clearCart(userId);
+      const savedOrder = await createOrder(order);
+
+      for (const item of cartItems) {
+        const finalPrice = calculateFinalPrice(item.products);
+        const subtotal = finalPrice * item.quantity;
+
+        await supabase
+          .from('order_items')
+          .insert([{
+            order_id: savedOrder.id,
+            product_id: item.product_id,
+            product_name: item.products.name,
+            quantity: item.quantity,
+            price: finalPrice,
+            subtotal: subtotal,
+          }]);
+      }
+
+      await clearCart(user.id);
 
       toast.success('Pesanan berhasil dibuat!', { id: loadingToast });
       setTimeout(() => navigate('/toko'), 2000);
@@ -65,8 +90,37 @@ const CheckoutPage = () => {
 
   if (loading) return <LoadingSpinner message="Memuat checkout..." />;
 
+  if (isAdmin) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4 pt-20">
+        <div className="glass rounded-2xl p-8 max-w-md w-full text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Mode Admin</h2>
+          <p className="text-gray-600">Mengalihkan ke Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4 pt-20">
+        <div className="glass rounded-2xl p-8 max-w-md w-full text-center">
+          <FiLock className="w-8 h-8 text-dustyRose mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Login Diperlukan</h2>
+          <p className="text-gray-600 mb-6">Silakan login untuk checkout.</p>
+          <button
+            onClick={() => navigate('/toko/login')}
+            className="w-full py-3 bg-dustyRose text-white rounded-lg hover:bg-coral"
+          >
+            Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const total = cartItems.reduce(
-    (sum, item) => sum + (item.products?.price || 0) * item.quantity,
+    (sum, item) => sum + calculateSubtotal(item.products, item.quantity),
     0
   );
 

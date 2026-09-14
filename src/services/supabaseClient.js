@@ -190,6 +190,25 @@ export const getOrders = async () => {
   return data;
 };
 
+export const getOrdersByUser = async (userId) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const getOrderItems = async (orderId) => {
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('*, products(*)')
+    .eq('order_id', orderId);
+  if (error) throw error;
+  return data;
+};
+
 export const updateOrderStatus = async (id, status) => {
   const { data, error } = await supabase
     .from('orders')
@@ -220,4 +239,76 @@ export const uploadProductImage = async (file) => {
     .getPublicUrl(fileName);
 
   return publicUrl;
+};
+
+// REVIEW SERVICES
+export const getProductReviews = async (productId) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const addReview = async (reviewData) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .insert([reviewData])
+    .select();
+  if (error) throw error;
+  return data[0];
+};
+
+export const checkUserReview = async (userId, productId, orderId) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('product_id', productId)
+    .eq('order_id', orderId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
+export const getUserReviews = async (userId) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return data;
+};
+
+
+// USER SERVICES
+export const getAllProfiles = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const getCustomers = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'customer')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const getAdmins = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'admin')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
 };

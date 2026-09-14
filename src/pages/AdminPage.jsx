@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AdminLogin from '../components/admin/AdminLogin';
+import AdminRegister from '../components/admin/AdminRegister';
 import Dashboard from '../components/admin/Dashboard';
 import ProductManagement from '../components/admin/ProductManagement';
 import ProductForm from '../components/admin/ProductForm';
@@ -14,6 +15,7 @@ const AdminPage = () => {
   return (
     <Routes>
       <Route path="/" element={<AdminLogin />} />
+      <Route path="/register" element={<AdminRegister />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/products" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
       <Route path="/products/add" element={<ProtectedRoute><ProductForm /></ProtectedRoute>} />

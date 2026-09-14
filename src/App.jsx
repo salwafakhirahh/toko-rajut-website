@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
@@ -11,6 +11,8 @@ import CheckoutPage from './pages/CheckoutPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminPage from './pages/AdminPage';
+import MyOrdersPage from './pages/MyOrdersPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import './styles/index.css';
 import './styles/admin.css';
@@ -30,6 +32,8 @@ function App() {
             <Route path="/toko/login" element={<LoginPage />} />
             <Route path="/toko/register" element={<RegisterPage />} />
             <Route path="/toko/admin/*" element={<AdminPage />} />
+            <Route path="/toko/orders" element={<MyOrdersPage />} />
+            <Route path="/toko/orders/:id" element={<OrderDetailPage />} /> 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>

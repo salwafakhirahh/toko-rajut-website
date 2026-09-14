@@ -1,9 +1,14 @@
 import React from 'react';
 import { FiTrash2, FiMinus, FiPlus } from 'react-icons/fi';
+import { calculateFinalPrice, calculateSubtotal } from '../../utils/priceHelper';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const product = item.products;
   const defaultImage = `https://picsum.photos/100/100?random=${product?.id}`;
+
+  const finalPrice = calculateFinalPrice(product);
+  const subtotal = calculateSubtotal(product, item.quantity);
+  const hasDiscount = (product?.discount || 0) > 0;
 
   return (
     <div className="glass-card rounded-xl p-4 flex items-center gap-4">
@@ -14,10 +19,27 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
       />
       <div className="flex-1">
         <h3 className="font-semibold text-gray-800">{product?.name}</h3>
-        <p className="text-dustyRose font-bold">
-          Rp {product?.price?.toLocaleString('id-ID')}
+
+        {hasDiscount ? (
+          <div>
+            <p className="text-xs line-through text-gray-400">
+              Rp {product?.price?.toLocaleString('id-ID')}
+            </p>
+            <p className="text-dustyRose font-bold">
+              Rp {finalPrice.toLocaleString('id-ID')}
+            </p>
+          </div>
+        ) : (
+          <p className="text-dustyRose font-bold">
+            Rp {finalPrice.toLocaleString('id-ID')}
+          </p>
+        )}
+
+        <p className="text-xs text-gray-500 mt-1">
+          Subtotal: Rp {subtotal.toLocaleString('id-ID')}
         </p>
       </div>
+
       <div className="flex items-center gap-2">
         <button
           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
@@ -33,6 +55,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
           <FiPlus className="w-4 h-4" />
         </button>
       </div>
+
       <button
         onClick={() => onRemove(item.id)}
         className="p-2 text-red-500 hover:text-red-700 transition-colors"

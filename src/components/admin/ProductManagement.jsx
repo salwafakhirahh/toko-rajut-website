@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import ConfirmModal from '../common/ConfirmModal';
 import { getProducts, deleteProduct } from '../../services/supabaseClient';
+import { calculateFinalPrice } from '../../utils/priceHelper';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const ProductManagement = () => {
@@ -92,48 +93,88 @@ const ProductManagement = () => {
                 <th>Gambar</th>
                 <th>Nama</th>
                 <th>Kategori</th>
-                <th>Harga</th>
+                <th>Harga Asli</th>
+                <th>Diskon</th>
+                <th>Harga Diskon</th>
                 <th>Stok</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-4">Tidak ada produk</td></tr>
+                <tr>
+                  <td colSpan="8" className="text-center py-4">
+                    Tidak ada produk
+                  </td>
+                </tr>
               ) : (
-                filtered.map((product) => (
-                  <tr key={product.id}>
-                    <td>
-                      <img
-                        src={product.image_url || `https://picsum.photos/50/50?random=${product.id}`}
-                        alt={product.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    </td>
-                    <td className="font-medium text-gray-800">{product.name}</td>
-                    <td>{product.categories?.name || '-'}</td>
-                    <td className="text-dustyRose font-semibold">
-                      Rp {product.price?.toLocaleString('id-ID')}
-                    </td>
-                    <td>{product.stock}</td>
-                    <td>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => navigate(`/toko/admin/products/edit/${product.id}`)}
-                          className="p-2 text-blue-500 hover:text-blue-700"
+                filtered.map((product) => {
+                  const finalPrice = calculateFinalPrice(product);
+                  const hasDiscount = (product.discount || 0) > 0;
+
+                  return (
+                    <tr key={product.id}>
+                      <td>
+                        <img
+                          src={
+                            product.image_url ||
+                            `https://picsum.photos/50/50?random=${product.id}`
+                          }
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      </td>
+                      <td className="font-medium text-gray-800">{product.name}</td>
+                      <td>{product.categories?.name || '-'}</td>
+                      <td className="text-gray-700">
+                        Rp {product.price?.toLocaleString('id-ID')}
+                      </td>
+                      <td>
+                        {hasDiscount ? (
+                          <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                            {product.discount}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="font-semibold text-dustyRose">
+                        Rp {finalPrice.toLocaleString('id-ID')}
+                      </td>
+                      <td>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            product.stock > 0
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
                         >
-                          <FiEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(product.id)}
-                          className="p-2 text-red-500 hover:text-red-700"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {product.stock > 0
+                            ? `${product.stock} tersisa`
+                            : 'Habis'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              navigate(`/toko/admin/products/edit/${product.id}`)
+                            }
+                            className="p-2 text-blue-500 hover:text-blue-700"
+                          >
+                            <FiEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(product.id)}
+                            className="p-2 text-red-500 hover:text-red-700"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

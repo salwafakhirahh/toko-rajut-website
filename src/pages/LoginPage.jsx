@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiLogIn } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -19,7 +19,7 @@ const LoginPage = () => {
       toast.success('Login berhasil!');
       setTimeout(() => navigate('/toko'), 1000);
     } catch (error) {
-      toast.error('Login gagal: ' + error.message);
+      toast.error('Login gagal: Email atau password salah');
     } finally {
       setLoading(false);
     }
@@ -76,17 +76,11 @@ const LoginPage = () => {
           </button>
         </form>
 
-        <div className="mt-4 text-center space-y-2">
+        <div className="mt-4 text-center">
           <p className="text-gray-600 text-sm">
             Belum punya akun?{' '}
             <Link to="/toko/register" className="text-dustyRose font-semibold hover:text-coral">
               Daftar di sini
-            </Link>
-          </p>
-          <p className="text-gray-500 text-xs">
-            Atau{' '}
-            <Link to="/toko" className="text-dustyRose hover:underline">
-              lanjut belanja sebagai guest
             </Link>
           </p>
         </div>
