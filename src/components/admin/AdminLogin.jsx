@@ -115,7 +115,7 @@ const AdminLogin = () => {
 
         <div className="mt-4 p-3 bg-white/30 rounded-lg">
           <p className="text-xs text-gray-600">
-            <span className="font-semibold">Demo:</span> urban123
+            <span className="font-semibold">Demo:</span> admin@tokorajut.com / admin123 / rahasia_admin_123
           </p>
         </div>
 
