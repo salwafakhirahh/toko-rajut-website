@@ -113,12 +113,6 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <div className="mt-4 p-3 bg-white/30 rounded-lg">
-          <p className="text-xs text-gray-600">
-            <span className="font-semibold">Demo:</span> admin@tokorajut.com / admin123 / rahasia_admin_123
-          </p>
-        </div>
-
         <p className="text-center text-gray-500 text-xs mt-4">
           Admin hanya dapat login. Registrasi admin dilakukan manual.
         </p>

@@ -113,12 +113,6 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <div className="mt-4 p-3 bg-white/30 rounded-lg">
-          <p className="text-xs text-gray-600">
-            <span className="font-semibold">Demo:</span> Email: adminurbanknitters1@gmail.com Password: adminurbanknitters123 Token: urban123
-          </p>
-        </div>
-
         <div className="mt-4 pt-4 border-t border-white/40">
           <p className="text-center text-gray-600 text-sm">
             Belum punya akun admin?{' '}

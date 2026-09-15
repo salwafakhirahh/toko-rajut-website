@@ -10,7 +10,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const quickLinks = [
-    { name: 'Home', path: '/toko', icon: <FiHome className="w-4 h-4" /> },
+    { name: 'Beranda', path: '/toko', icon: <FiHome className="w-4 h-4" /> },
     { name: 'Produk', path: '/toko/products', icon: <FiShoppingBag className="w-4 h-4" /> },
     { name: 'Keranjang', path: '/toko/cart', icon: <FiPackage className="w-4 h-4" /> },
     { name: 'Pesanan Saya', path: '/toko/orders', icon: <FiPackage className="w-4 h-4" /> },
@@ -108,7 +108,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center gap-3">
                 <FiPhone className="w-5 h-5 text-dustyRose flex-shrink-0" />
-                <span>+62 812 3456 7890</span>
+                <span>+62 822 4563 8337</span>
               </div>
               <div className="flex items-center gap-3">
                 <FiMail className="w-5 h-5 text-dustyRose flex-shrink-0" />

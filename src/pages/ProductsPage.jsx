@@ -60,7 +60,7 @@ const ProductsPage = () => {
             className="flex items-center gap-2 text-gray-600 hover:text-dustyRose transition-colors font-medium"
           >
             <FiArrowLeft className="w-5 h-5" />
-            Kembali ke Home
+            Kembali ke Beranda
           </Link>
         </div>
 
