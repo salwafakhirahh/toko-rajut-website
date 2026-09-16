@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiArrowLeft, FiPlus, FiX, FiFolder, FiPercent } from 'react-icons/fi';
+import { FiSave, FiArrowLeft, FiPlus, FiX, FiFolder, FiPercent, FiImage } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import CustomSelect from '../common/CustomSelect';
@@ -27,7 +27,6 @@ const ProductForm = () => {
     category_id: '',
     image_url: '',
     discount: 0,
-    is_promo: false,
   });
   const [categories, setCategories] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -44,9 +43,11 @@ const ProductForm = () => {
 
   const fetchData = async () => {
     try {
+      // Ambil daftar kategori DULU
       const categoriesData = await getCategories();
       setCategories(categoriesData);
 
+      // Kalau edit, ambil data produk
       if (isEdit) {
         const product = await getProductById(id);
         setFormData({
@@ -54,22 +55,23 @@ const ProductForm = () => {
           description: product.description || '',
           price: product.price || '',
           stock: product.stock || '',
-          category_id: product.category_id || '',
+          category_id: product.category_id || '',  // ← PASTIKAN category_id
           image_url: product.image_url || '',
           discount: product.discount || 0,
-          is_promo: product.is_promo || false,
         });
         setImagePreview(product.image_url || '');
       }
     } catch (error) {
       toast.error('Gagal memuat data');
+      console.error(error);
     } finally {
       setFetching(false);
     }
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleImageChange = (e) => {
@@ -97,9 +99,11 @@ const ProductForm = () => {
         description: '',
       });
 
+      // Refresh daftar kategori
       const updatedCategories = await getCategories();
       setCategories(updatedCategories);
 
+      // Set kategori baru sebagai yang dipilih
       setFormData({ ...formData, category_id: newCategory.id });
       setNewCategoryName('');
       setShowCategoryInput(false);
@@ -116,6 +120,7 @@ const ProductForm = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validasi
     if (!formData.category_id) {
       toast.error('Pilih kategori terlebih dahulu');
       setLoading(false);
@@ -147,6 +152,7 @@ const ProductForm = () => {
       setTimeout(() => navigate('/toko/admin/products'), 1500);
     } catch (error) {
       toast.error('Gagal menyimpan: ' + error.message, { id: loadingToast });
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -157,6 +163,7 @@ const ProductForm = () => {
     label: cat.name,
   }));
 
+  // Hitung preview harga final
   const price = parseInt(formData.price) || 0;
   const discount = parseInt(formData.discount) || 0;
   const finalPrice = price - (price * discount / 100);
@@ -167,29 +174,34 @@ const ProductForm = () => {
     <AdminLayout>
       <button
         onClick={() => navigate('/toko/admin/products')}
-        className="flex items-center gap-2 text-gray-600 hover:text-dustyRose mb-4"
+        className="flex items-center gap-2 text-gray-600 hover:text-dustyRose mb-4 transition-colors"
       >
         <FiArrowLeft /> Kembali
       </button>
 
-      <div className="admin-card">
+      <div className="admin-card max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">
-          {isEdit ? 'Edit Produk' : 'Tambah Produk Baru'}
+          {isEdit ? '✏️ Edit Produk' : '➕ Tambah Produk Baru'}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nama Produk */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Nama Produk *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Nama Produk *
+            </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
+              placeholder="Contoh: Baju Rajut Polos"
               className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
               required
             />
           </div>
 
+          {/* Kategori */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="flex items-center gap-2 text-gray-700 font-medium">
@@ -252,6 +264,9 @@ const ProductForm = () => {
                     <FiX className="w-4 h-4" />
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 ml-10">
+                  Kategori akan otomatis tersimpan dan langsung terpilih
+                </p>
               </div>
             )}
 
@@ -261,33 +276,47 @@ const ProductForm = () => {
               onChange={(value) => setFormData({ ...formData, category_id: value })}
               placeholder="Pilih Kategori"
             />
+
+            {categories.length === 0 && !showCategoryInput && (
+              <p className="text-xs text-red-500 mt-2">
+                ⚠️ Belum ada kategori. Klik "Tambah Kategori Baru" untuk membuat.
+              </p>
+            )}
           </div>
 
+          {/* Harga & Stok */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Harga *</label>
+              <label className="block text-gray-700 font-medium mb-2">
+                Harga (Rp) *
+              </label>
               <input
                 type="number"
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
+                placeholder="150000"
                 className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
                 required
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Stok *</label>
+              <label className="block text-gray-700 font-medium mb-2">
+                Stok *
+              </label>
               <input
                 type="number"
                 name="stock"
                 value={formData.stock}
                 onChange={handleChange}
+                placeholder="10"
                 className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
                 required
               />
             </div>
           </div>
 
+          {/* Diskon */}
           <div className="p-4 bg-gradient-to-r from-dustyRose/10 to-coral/10 rounded-xl border border-dustyRose/30">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-full bg-dustyRose/20 flex items-center justify-center">
@@ -298,37 +327,20 @@ const ProductForm = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-700 font-medium mb-2 text-sm">
-                  Diskon (%)
-                </label>
-                <input
-                  type="number"
-                  name="discount"
-                  value={formData.discount}
-                  onChange={handleChange}
-                  min="0"
-                  max="100"
-                  className="w-full px-4 py-2 bg-white/60 rounded-lg border border-dustyRose/30 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2 text-sm">
-                  Tandai Promo
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, is_promo: !formData.is_promo })}
-                  className={`w-full px-4 py-2 rounded-lg border-2 transition-all font-semibold ${
-                    formData.is_promo
-                      ? 'bg-dustyRose text-white border-dustyRose'
-                      : 'bg-white/60 text-gray-600 border-dustyRose/30'
-                  }`}
-                >
-                  {formData.is_promo ? '🔥 Promo Aktif' : 'Tidak Promo'}
-                </button>
-              </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2 text-sm">
+                Diskon (%)
+              </label>
+              <input
+                type="number"
+                name="discount"
+                value={formData.discount}
+                onChange={handleChange}
+                min="0"
+                max="100"
+                placeholder="0"
+                className="w-full px-4 py-2 bg-white/60 rounded-lg border border-dustyRose/30 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+              />
             </div>
 
             {discount > 0 && price > 0 && (
@@ -355,42 +367,57 @@ const ProductForm = () => {
             )}
           </div>
 
+          {/* Deskripsi */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Deskripsi</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Deskripsi
+            </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows="3"
+              rows="4"
+              placeholder="Deskripsi produk..."
               className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose resize-none"
             />
           </div>
 
+          {/* Upload Gambar */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Gambar Produk</label>
+            <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
+              <FiImage className="text-dustyRose" />
+              Gambar Produk
+            </label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40"
+              className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-dustyRose file:text-white hover:file:bg-coral cursor-pointer"
             />
             {imagePreview && (
-              <img src={imagePreview} alt="Preview" className="mt-4 w-32 h-32 object-cover rounded-lg" />
+              <div className="mt-4">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg border-2 border-white/40 shadow-md"
+                />
+              </div>
             )}
           </div>
 
+          {/* Tombol */}
           <div className="flex gap-4 pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 py-3 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
             >
               <FiSave /> {loading ? 'Menyimpan...' : 'Simpan'}
             </button>
             <button
               type="button"
               onClick={() => navigate('/toko/admin/products')}
-              className="px-6 py-3 bg-white/30 text-gray-700 rounded-lg hover:bg-white/50"
+              className="px-6 py-3 bg-white/30 text-gray-700 rounded-lg hover:bg-white/50 transition-all"
             >
               Batal
             </button>

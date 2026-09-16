@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
+import { Link, useNavigate } from 'react-router-dom';
+import {
   FiShoppingBag, FiTruck, FiHeart, FiStar, FiChevronRight,
-  FiPackage, FiGift, FiBox, FiShoppingCart, FiTag
+  FiSearch, FiX
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getProducts, getCategories } from '../services/supabaseClient';
@@ -13,6 +13,8 @@ const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -36,12 +38,22 @@ const HomePage = () => {
   const getCategoryIcon = (slug) => {
     const iconMap = {
       'baju-rajut': <FiShoppingBag className="w-7 h-7" />,
-      'sweater-rajut': <FiPackage className="w-7 h-7" />,
-      'tas-rajut': <FiShoppingCart className="w-7 h-7" />,
-      'mainan-rajut': <FiGift className="w-7 h-7" />,
-      'lainnya': <FiBox className="w-7 h-7" />,
+      'sweater-rajut': <FiShoppingBag className="w-7 h-7" />,
+      'tas-rajut': <FiShoppingBag className="w-7 h-7" />,
+      'mainan-rajut': <FiHeart className="w-7 h-7" />,
+      'lainnya': <FiStar className="w-7 h-7" />,
     };
-    return iconMap[slug] || <FiTag className="w-7 h-7" />;
+    return iconMap[slug] || <FiStar className="w-7 h-7" />;
+  };
+
+  // Handle search dari Beranda
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (search.trim()) {
+      navigate(`/toko/products?search=${encodeURIComponent(search.trim())}`);
+    } else {
+      navigate('/toko/products');
+    }
   };
 
   const features = [
@@ -55,8 +67,9 @@ const HomePage = () => {
 
   return (
     <div>
+      {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div 
+        <div
           className="relative min-h-[400px] md:min-h-[450px] flex items-center"
           style={{
             backgroundImage: 'url(/images/background-toko-rajut.jpg)',
@@ -74,7 +87,7 @@ const HomePage = () => {
                 </span>
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4 leading-tight">
                   Selamat Datang di{' '}
-                  <span className="text-dustyRose">Urban Knitters</span>
+                  <span className="text-dustyRose">Toko Rajut</span>
                 </h1>
                 <p className="text-base md:text-lg text-gray-700 mb-6 max-w-lg">
                   Temukan berbagai produk rajut berkualitas tinggi dengan desain eksklusif dan harga terjangkau.
@@ -123,6 +136,36 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Search Bar di Beranda */}
+      <section className="max-w-3xl mx-auto px-4 py-8">
+        <form onSubmit={handleSearch} className="relative">
+          <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari produk rajut favorit Anda..."
+            className="w-full px-4 py-4 pl-12 pr-32 bg-white/50 backdrop-blur-md rounded-full border border-white/50 focus:outline-none focus:ring-2 focus:ring-dustyRose shadow-lg text-gray-700"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-28 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+          )}
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-dustyRose text-white px-6 py-2 rounded-full hover:bg-coral transition-all font-semibold text-sm"
+          >
+            Cari
+          </button>
+        </form>
+      </section>
+
+      {/* Features */}
       <section className="bg-white/40 backdrop-blur-md border-y border-white/50">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -141,6 +184,7 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Kategori */}
       <section className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl font-bold">
@@ -171,6 +215,7 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Produk Terbaru */}
       <section className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl font-bold">
@@ -188,6 +233,7 @@ const HomePage = () => {
         <ProductGrid products={products} />
       </section>
 
+      {/* Banner Promo */}
       <section className="max-w-7xl mx-auto px-4 py-10">
         <div className="glass rounded-2xl p-8 md:p-12 text-center relative overflow-hidden">
           <div className="relative z-10">

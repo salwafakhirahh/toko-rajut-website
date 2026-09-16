@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const getProducts = async () => {
   const { data, error } = await supabase
     .from('products')
-    .select('*, categories(id, name)')
+    .select('*, categories(id, name, slug)') 
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
