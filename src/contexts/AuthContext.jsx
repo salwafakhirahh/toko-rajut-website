@@ -76,11 +76,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
+      // Bersihkan state
       setUser(null);
       setProfile(null);
       localStorage.removeItem('adminToken');
-      
+
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);

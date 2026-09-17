@@ -15,6 +15,7 @@ export const loginWithToken = (token) => {
 
 export const logout = () => {
   localStorage.removeItem('adminToken');
+  // Tidak ada redirect di sini — biar komponen yang handle
 };
 
 export const isAuthenticated = () => {

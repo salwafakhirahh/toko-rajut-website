@@ -19,7 +19,8 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!authenticated) {
-    return <Navigate to="/toko/admin" replace />;
+    // ✅ Redirect ke halaman TAMU, bukan login admin
+    return <Navigate to="/toko" replace />;
   }
 
   return children;
