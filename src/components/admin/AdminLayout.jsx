@@ -20,29 +20,23 @@ const AdminLayout = ({ children }) => {
     { name: 'Pesanan', path: '/toko/admin/orders', icon: <FiShoppingBag /> },
     { name: 'Laporan', path: '/toko/admin/reports', icon: <FiBarChart2 /> },
     { name: 'Pengguna', path: '/toko/admin/users', icon: <FiUsers /> },
-    { name: 'Profil Admin', path: '/toko/admin/profile', icon: <FiUser /> },
   ];
 
-  const handleLogoutClick = () => {
-    setShowLogoutModal(true);
-  };
+  const handleLogoutClick = () => setShowLogoutModal(true);
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout = async () => {
     setShowLogoutModal(false);
-    logout();
+    await logout();
     toast.success('Berhasil logout');
-    setTimeout(() => navigate('/toko'), 800);
-  };
-
-  const handleCancelLogout = () => {
-    setShowLogoutModal(false);
+    navigate('/toko', { replace: true });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cream via-roseQuartz to-dustyRose flex flex-col">
-      <div className="flex flex-1">
-        <aside className="w-64 bg-white/30 backdrop-blur-xl border-r border-white/40 p-4 flex flex-col">
-          <div className="mb-8">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-cream via-roseQuartz to-dustyRose overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white/30 backdrop-blur-xl border-r border-white/40 p-4 flex flex-col overflow-y-auto">
+          <div className="mb-6">
             <h2 className="text-xl font-bold text-dustyRose flex items-center gap-2">
               <FiUser className="w-6 h-6" />
               Admin Panel
@@ -55,10 +49,11 @@ const AdminLayout = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${location.pathname === item.path
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${
+                  location.pathname === item.path
                     ? 'bg-dustyRose text-white shadow-lg'
                     : 'text-gray-700 hover:bg-white/40'
-                  }`}
+                }`}
               >
                 {item.icon}
                 <span>{item.name}</span>
@@ -66,39 +61,42 @@ const AdminLayout = ({ children }) => {
             ))}
           </nav>
 
-          <button
-            onClick={handleLogoutClick}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-100/50 transition-all w-full mt-8"
-          >
-            <FiLogOut />
-            <span>Logout</span>
-          </button>
+          {/* Menu bawah: Profil Admin, lalu Logout */}
+          <div className="mt-4 space-y-2 border-t border-white/40 pt-4">
+            <Link
+              to="/toko/admin/profile"
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${
+                location.pathname === '/toko/admin/profile'
+                  ? 'bg-dustyRose text-white shadow-lg'
+                  : 'text-gray-700 hover:bg-white/40'
+              }`}
+            >
+              <FiUser />
+              <span>Profil Admin</span>
+            </Link>
+
+            <button
+              onClick={handleLogoutClick}
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-100/50 transition-all w-full text-sm"
+            >
+              <FiLogOut />
+              <span>Logout</span>
+            </button>
+          </div>
         </aside>
 
-        <main className="flex-1 p-6">
-          {children}
+        {/* Konten Utama */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">{children}</div>
         </main>
       </div>
-
-      <footer className="bg-white/20 backdrop-blur-xl border-t border-white/40 py-4 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-600">
-          <p>
-            &copy; {new Date().getFullYear()}{' '}
-            <span className="font-bold text-dustyRose">Urban Knitters</span> - Admin Panel
-          </p>
-          <p>
-            Dibuat dengan <span className="text-red-500">♥</span> oleh{' '}
-            <span className="font-semibold text-dustyRose">Salwa Fakhirah Harsya</span>
-          </p>
-        </div>
-      </footer>
 
       <ConfirmModal
         isOpen={showLogoutModal}
         title="Logout dari Admin Panel"
         message="Apakah Anda yakin ingin keluar dari Admin Panel?"
         onConfirm={handleConfirmLogout}
-        onCancel={handleCancelLogout}
+        onCancel={() => setShowLogoutModal(false)}
         confirmText="Ya, Logout"
         cancelText="Batal"
         confirmColor="dustyRose"

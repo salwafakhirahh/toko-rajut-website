@@ -5,11 +5,7 @@ import Footer from './Footer';
 
 const Layout = ({ children }) => {
   const location = useLocation();
-  const isAdminPage = location.pathname.includes('/admin/dashboard') ||
-                      location.pathname.includes('/admin/products') ||
-                      location.pathname.includes('/admin/categories') ||
-                      location.pathname.includes('/admin/orders') ||
-                      location.pathname.includes('/admin/reports');
+  const isAdminPage = location.pathname.startsWith('/toko/admin');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream via-roseQuartz to-dustyRose flex flex-col">
