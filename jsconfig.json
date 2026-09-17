@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
     "checkJs": false,
     "forceConsistentCasingInFileNames": false
   },
