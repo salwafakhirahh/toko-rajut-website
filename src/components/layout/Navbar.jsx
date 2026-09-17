@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FiShoppingBag, FiShoppingCart, FiUser, FiArrowLeft,
-  FiLogOut, FiLogIn, FiPackage, FiLayout
+  FiLogOut, FiLogIn, FiPackage, FiLayout, FiHome, FiInfo
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ const PORTFOLIO_URL = import.meta.env.VITE_PORTFOLIO_URL || 'http://localhost:51
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, logout, isAuthenticated, isAdmin } = useAuth();
 
   const handleLogout = async () => {
@@ -21,6 +22,37 @@ const Navbar = () => {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Logout gagal');
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToAbout = () => {
+    const el = document.getElementById('about');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      console.warn('Section #about tidak ditemukan di halaman ini');
+    }
+  };
+
+  const handleHomeClick = () => {
+    if (location.pathname === '/toko') {
+      scrollToTop();
+    } else {
+      navigate('/toko');
+      setTimeout(scrollToTop, 500);
+    }
+  };
+
+  const handleAboutClick = () => {
+    if (location.pathname === '/toko') {
+      scrollToAbout();
+    } else {
+      navigate('/toko');
+      setTimeout(scrollToAbout, 500);
     }
   };
 
@@ -35,13 +67,26 @@ const Navbar = () => {
             <FiArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Portfolio</span>
           </a>
-          <Link to="/toko" className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleHomeClick}
+            className="flex items-center gap-2 cursor-pointer"
+          >
             <img src="/images/logo.jpg" alt="Urban Knitters" className="w-8 h-8 object-contain rounded-full" />
             <span className="text-xl font-bold text-dustyRose">Urban Knitters</span>
-          </Link>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleHomeClick}
+            className="flex items-center gap-1 text-gray-700 hover:text-dustyRose transition-colors cursor-pointer"
+          >
+            <FiHome className="w-5 h-5" />
+            <span className="hidden sm:inline">Beranda</span>
+          </button>
+
           <Link
             to="/toko/products"
             className="flex items-center gap-1 text-gray-700 hover:text-dustyRose transition-colors"
@@ -49,6 +94,15 @@ const Navbar = () => {
             <FiShoppingBag className="w-5 h-5" />
             <span className="hidden sm:inline">Produk</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={handleAboutClick}
+            className="flex items-center gap-1 text-gray-700 hover:text-dustyRose transition-colors cursor-pointer"
+          >
+            <FiInfo className="w-5 h-5" />
+            <span className="hidden sm:inline">Tentang Toko</span>
+          </button>
 
           {isAuthenticated && isAdmin && (
             <Link
