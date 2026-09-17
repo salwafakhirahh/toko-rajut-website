@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSearch } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import ConfirmModal from '../common/ConfirmModal';
@@ -14,6 +14,7 @@ const CategoryManagement = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -33,7 +34,6 @@ const CategoryManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const loadingToast = toast.loading('Menyimpan...');
-
     try {
       if (editingId) {
         await updateCategory(editingId, formData);
@@ -65,7 +65,6 @@ const CategoryManagement = () => {
   const handleConfirmDelete = async () => {
     setShowModal(false);
     const loadingToast = toast.loading('Menghapus...');
-
     try {
       await deleteCategory(deleteId);
       fetchCategories();
@@ -81,6 +80,11 @@ const CategoryManagement = () => {
     setShowModal(false);
     setDeleteId(null);
   };
+
+  const filtered = categories.filter((cat) =>
+    (cat.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (cat.description || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   if (loading) return <LoadingSpinner message="Memuat kategori..." />;
 
@@ -98,6 +102,19 @@ const CategoryManagement = () => {
         >
           <FiPlus /> Tambah Kategori
         </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cari kategori..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 rounded-full bg-white/60 backdrop-blur border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+          />
+        </div>
       </div>
 
       {showForm && (
@@ -150,22 +167,30 @@ const CategoryManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {categories.map((cat) => (
-              <tr key={cat.id}>
-                <td className="font-medium text-gray-800">{cat.name}</td>
-                <td>{cat.description || '-'}</td>
-                <td>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEdit(cat)} className="p-2 text-blue-500 hover:text-blue-700">
-                      <FiEdit />
-                    </button>
-                    <button onClick={() => handleDeleteClick(cat.id)} className="p-2 text-red-500 hover:text-red-700">
-                      <FiTrash2 />
-                    </button>
-                  </div>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan="3" className="text-center py-4">
+                  Tidak ada kategori yang cocok
                 </td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((cat) => (
+                <tr key={cat.id}>
+                  <td className="font-medium text-gray-800">{cat.name}</td>
+                  <td>{cat.description || '-'}</td>
+                  <td>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEdit(cat)} className="p-2 text-blue-500 hover:text-blue-700">
+                        <FiEdit />
+                      </button>
+                      <button onClick={() => handleDeleteClick(cat.id)} className="p-2 text-red-500 hover:text-red-700">
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

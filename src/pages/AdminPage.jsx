@@ -11,6 +11,8 @@ import OrderManagement from '../components/admin/OrderManagement';
 import SalesReport from '../components/admin/SalesReport';
 import TopProducts from '../components/admin/TopProducts';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import UserManagement from '../components/admin/UserManagement';
+import AdminProfile from '../components/admin/AdminProfile';
 
 const AdminPage = () => {
   return (
@@ -26,6 +28,8 @@ const AdminPage = () => {
       <Route path="/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><SalesReport /></ProtectedRoute>} />
       <Route path="/reports/top" element={<ProtectedRoute><TopProducts /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
     </Routes>
   );
 };

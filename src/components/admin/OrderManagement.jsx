@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiEdit2, FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi';
+import { FiEdit2, FiX, FiCheck, FiAlertTriangle, FiSearch } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import StatusBadge from '../common/StatusBadge';
@@ -9,23 +9,16 @@ import LoadingSpinner from '../common/LoadingSpinner';
 
 const getNextStatuses = (currentStatus) => {
   switch (currentStatus) {
-    case 'pending':
-      return ['paid', 'cancelled'];
-    case 'paid':
-      return ['shipped', 'cancelled'];
-    case 'shipped':
-      return ['delivered', 'cancelled'];
+    case 'pending': return ['paid', 'cancelled'];
+    case 'paid': return ['shipped', 'cancelled'];
+    case 'shipped': return ['delivered', 'cancelled'];
     case 'delivered':
-    case 'cancelled':
-      return [];
-    default:
-      return [];
+    case 'cancelled': return [];
+    default: return [];
   }
 };
 
-const isFinalStatus = (status) => {
-  return status === 'delivered' || status === 'cancelled';
-};
+const isFinalStatus = (status) => status === 'delivered' || status === 'cancelled';
 
 const StatusModal = ({ order, isOpen, onClose, onChange }) => {
   const [confirmAction, setConfirmAction] = useState(null);
@@ -62,7 +55,6 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
             onClick={onClose}
           />
-
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -73,28 +65,21 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
             <div className="glass rounded-2xl p-6 shadow-2xl border border-white/50 relative">
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
               >
                 <FiX className="w-5 h-5" />
               </button>
-
               <h3 className="text-lg font-bold text-gray-800 mb-2">
                 {isFinal ? 'Status Pesanan' : 'Ubah Status Pesanan'}
               </h3>
-              <p className="text-xs text-gray-500 font-mono mb-4">
-                {order.order_number}
-              </p>
-
+              <p className="text-xs text-gray-500 font-mono mb-4">{order.order_number}</p>
               <div className="mb-4 p-3 bg-white/40 rounded-xl border border-white/40">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Status saat ini:</span>
                   <StatusBadge status={order.status} />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {statusInfo[order.status]?.desc}
-                </p>
+                <p className="text-xs text-gray-500 mt-2">{statusInfo[order.status]?.desc}</p>
               </div>
-
               {isFinal ? (
                 <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-xl border border-green-200">
                   <div className="flex items-start gap-3">
@@ -102,9 +87,7 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
                       <FiCheck className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-green-700 text-sm">
-                        Pesanan Selesai
-                      </p>
+                      <p className="font-semibold text-green-700 text-sm">Pesanan Selesai</p>
                       <p className="text-xs text-green-600 mt-1">
                         Status pesanan ini sudah final dan tidak dapat diubah lagi.
                       </p>
@@ -119,35 +102,25 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
                         <FiAlertTriangle className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm">
-                          Konfirmasi Perubahan
-                        </p>
+                        <p className="font-semibold text-gray-800 text-sm">Konfirmasi Perubahan</p>
                         <p className="text-xs text-gray-600 mt-1">
-                          Ubah status dari{' '}
-                          <span className="font-semibold">{statusInfo[order.status]?.label}</span>
-                          {' '}menjadi{' '}
-                          <span className="font-semibold text-dustyRose">
-                            {statusInfo[confirmAction]?.label}
-                          </span>
-                          ? Tindakan ini tidak dapat dibatalkan.
+                          Ubah status dari <span className="font-semibold">{statusInfo[order.status]?.label}</span> menjadi{' '}
+                          <span className="font-semibold text-dustyRose">{statusInfo[confirmAction]?.label}</span>?
                         </p>
                       </div>
                     </div>
                   </div>
-
                   <div className="flex gap-3">
                     <button
                       onClick={() => setConfirmAction(null)}
-                      className="flex-1 py-2.5 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-all font-semibold border border-white/40"
+                      className="flex-1 py-2.5 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 font-semibold border border-white/40"
                     >
                       Batal
                     </button>
                     <button
                       onClick={handleConfirm}
-                      className={`flex-1 py-2.5 text-white rounded-lg transition-all font-semibold shadow-lg ${
-                        confirmAction === 'cancelled'
-                          ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-dustyRose hover:bg-coral'
+                      className={`flex-1 py-2.5 text-white rounded-lg font-semibold shadow-lg ${
+                        confirmAction === 'cancelled' ? 'bg-red-500 hover:bg-red-600' : 'bg-dustyRose hover:bg-coral'
                       }`}
                     >
                       Ya, Ubah
@@ -156,9 +129,7 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
                 </div>
               ) : (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-3">
-                    Pilih status berikutnya:
-                  </p>
+                  <p className="text-sm font-medium text-gray-700 mb-3">Pilih status berikutnya:</p>
                   <div className="space-y-2">
                     {nextStatuses.map((status, index) => (
                       <motion.button
@@ -176,9 +147,7 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
                       >
                         <div className="flex items-center gap-3">
                           <StatusBadge status={status} />
-                          <span className="text-xs text-gray-500">
-                            {statusInfo[status]?.desc}
-                          </span>
+                          <span className="text-xs text-gray-500">{statusInfo[status]?.desc}</span>
                         </div>
                       </motion.button>
                     ))}
@@ -198,6 +167,8 @@ const OrderManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchOrders();
@@ -221,7 +192,6 @@ const OrderManagement = () => {
 
   const handleStatusChange = async (status) => {
     if (!selectedOrder) return;
-
     const loadingToast = toast.loading('Mengupdate status...');
     try {
       await updateOrderStatus(selectedOrder.id, status);
@@ -232,11 +202,46 @@ const OrderManagement = () => {
     }
   };
 
+  const filtered = orders.filter((o) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      (o.order_number || '').toLowerCase().includes(q) ||
+      (o.customer_name || '').toLowerCase().includes(q) ||
+      (o.customer_phone || '').toLowerCase().includes(q);
+    const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
   if (loading) return <LoadingSpinner message="Memuat pesanan..." />;
 
   return (
     <AdminLayout>
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Manajemen Pesanan</h1>
+
+      <div className="flex flex-wrap gap-4 mb-6">
+        <div className="relative flex-1 min-w-[240px]">
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cari no. pesanan, customer, atau telepon..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 rounded-full bg-white/60 backdrop-blur border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-3 rounded-full bg-white/60 backdrop-blur border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+        >
+          <option value="all">Semua Status</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
 
       <div className="admin-card">
         <div className="overflow-x-auto">
@@ -252,12 +257,14 @@ const OrderManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {orders.length === 0 ? (
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">Belum ada pesanan</td>
+                  <td colSpan="6" className="text-center py-4">
+                    Tidak ada pesanan yang cocok
+                  </td>
                 </tr>
               ) : (
-                orders.map((order) => {
+                filtered.map((order) => {
                   const isFinal = isFinalStatus(order.status);
                   return (
                     <tr key={order.id}>
@@ -284,7 +291,7 @@ const OrderManagement = () => {
                         ) : (
                           <button
                             onClick={() => handleOpenModal(order)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all text-xs font-semibold shadow-md"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold shadow-md"
                           >
                             <FiEdit2 className="w-3.5 h-3.5" />
                             Ubah Status

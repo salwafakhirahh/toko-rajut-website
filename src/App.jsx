@@ -14,6 +14,7 @@ import AdminPage from './pages/AdminPage';
 import MyOrdersPage from './pages/MyOrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
+import CustomerProfilePage from './pages/CustomerProfilePage';
 import './styles/index.css';
 import './styles/admin.css';
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="/toko/register" element={<RegisterPage />} />
             <Route path="/toko/orders" element={<MyOrdersPage />} />
             <Route path="/toko/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/toko/profile" element={<CustomerProfilePage />} />
 
             {/* Halaman admin, semua sub-route ditangani oleh AdminPage */}
             <Route path="/toko/admin/*" element={<AdminPage />} />

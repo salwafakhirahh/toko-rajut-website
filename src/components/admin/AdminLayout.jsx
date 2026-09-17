@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FiHome, FiPackage, FiFolder, FiShoppingBag,
-  FiBarChart2, FiLogOut, FiUser
+  FiBarChart2, FiLogOut, FiUser, FiUsers
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { logout } from '../../services/authService';
@@ -19,6 +19,8 @@ const AdminLayout = ({ children }) => {
     { name: 'Kategori', path: '/toko/admin/categories', icon: <FiFolder /> },
     { name: 'Pesanan', path: '/toko/admin/orders', icon: <FiShoppingBag /> },
     { name: 'Laporan', path: '/toko/admin/reports', icon: <FiBarChart2 /> },
+    { name: 'Pengguna', path: '/toko/admin/users', icon: <FiUsers /> },
+    { name: 'Profil Admin', path: '/toko/admin/profile', icon: <FiUser /> },
   ];
 
   const handleLogoutClick = () => {
@@ -53,11 +55,10 @@ const AdminLayout = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
-                  location.pathname === item.path
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${location.pathname === item.path
                     ? 'bg-dustyRose text-white shadow-lg'
                     : 'text-gray-700 hover:bg-white/40'
-                }`}
+                  }`}
               >
                 {item.icon}
                 <span>{item.name}</span>

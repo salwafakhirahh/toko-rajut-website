@@ -13,8 +13,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, profile, logout, isAuthenticated, isAdmin } = useAuth();
 
-  // Logout dari navbar, langsung arahkan ke halaman tamu
-  // Tidak memakai window.location.reload agar transisi lebih halus
   const handleLogout = async () => {
     try {
       await logout();
@@ -74,13 +72,22 @@ const Navbar = () => {
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               {!isAdmin && (
-                <Link
-                  to="/toko/orders"
-                  className="flex items-center gap-1 text-gray-700 hover:text-dustyRose transition-colors"
-                >
-                  <FiPackage className="w-5 h-5" />
-                  <span className="hidden sm:inline">Pesanan</span>
-                </Link>
+                <>
+                  <Link
+                    to="/toko/orders"
+                    className="flex items-center gap-1 text-gray-700 hover:text-dustyRose transition-colors"
+                  >
+                    <FiPackage className="w-5 h-5" />
+                    <span className="hidden sm:inline">Pesanan</span>
+                  </Link>
+                  <Link
+                    to="/toko/profile"
+                    className="flex items-center gap-1 text-gray-700 hover:text-dustyRose transition-colors"
+                  >
+                    <FiUser className="w-5 h-5" />
+                    <span className="hidden sm:inline">Profil</span>
+                  </Link>
+                </>
               )}
               <span className="hidden md:inline text-sm text-gray-700 ml-2">
                 Hi, {profile?.full_name || user?.email}
