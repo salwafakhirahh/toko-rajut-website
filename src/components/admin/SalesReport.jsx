@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { FiSearch, FiDownload, FiFileText, FiDollarSign, FiShoppingBag, FiTrendingUp } from 'react-icons/fi';
+import {
+  FiSearch, FiDownload, FiFileText,
+  FiDollarSign, FiShoppingBag, FiTrendingUp,
+} from 'react-icons/fi';
 import AdminLayout from './AdminLayout';
 import { supabase } from '../../services/supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -9,8 +12,11 @@ const SalesReport = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [period, setPeriod] = useState('all');
 
-  useEffect(() => { fetchSales(); }, []);
+  useEffect(() => {
+    fetchSales();
+  }, []);
 
   const fetchSales = async () => {
     try {
@@ -28,7 +34,34 @@ const SalesReport = () => {
     }
   };
 
-  const filtered = items.filter((it) => {
+  const filterByPeriod = (list) => {
+    if (period === 'all') return list;
+    const now = new Date();
+    return list.filter((it) => {
+      const dateStr = it.orders?.created_at || it.created_at;
+      if (!dateStr) return false;
+      const date = new Date(dateStr);
+      if (period === 'daily') {
+        return (
+          date.getFullYear() === now.getFullYear() &&
+          date.getMonth() === now.getMonth() &&
+          date.getDate() === now.getDate()
+        );
+      }
+      if (period === 'monthly') {
+        return (
+          date.getFullYear() === now.getFullYear() &&
+          date.getMonth() === now.getMonth()
+        );
+      }
+      if (period === 'yearly') {
+        return date.getFullYear() === now.getFullYear();
+      }
+      return true;
+    });
+  };
+
+  const filtered = filterByPeriod(items).filter((it) => {
     const q = search.toLowerCase();
     return (
       (it.product_name || '').toLowerCase().includes(q) ||
@@ -41,7 +74,7 @@ const SalesReport = () => {
   const totalItems = filtered.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
 
   const formatPrice = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
-  const formatDate = (s) => s ? new Date(s).toLocaleDateString('id-ID') : '-';
+  const formatDate = (s) => (s ? new Date(s).toLocaleDateString('id-ID') : '-');
 
   const exportCSV = () => {
     const headers = ['No Pesanan', 'Pelanggan', 'Produk', 'Qty', 'Harga', 'Subtotal', 'Tanggal'];
@@ -60,7 +93,7 @@ const SalesReport = () => {
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `laporan-penjualan-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `laporan-penjualan-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     toast.success('CSV berhasil diunduh');
   };
@@ -78,6 +111,7 @@ const SalesReport = () => {
         .total { margin-top: 16px; font-weight: bold; }
       </style></head><body>
       <h1>Laporan Penjualan</h1>
+      <p>Periode: ${period}</p>
       <p>Tanggal cetak: ${new Date().toLocaleString('id-ID')}</p>
       <table>
         <thead><tr>
@@ -125,6 +159,27 @@ const SalesReport = () => {
             <FiFileText /> Export PDF
           </button>
         </div>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {[
+          { key: 'daily', label: 'Harian' },
+          { key: 'monthly', label: 'Bulanan' },
+          { key: 'yearly', label: 'Tahunan' },
+          { key: 'all', label: 'Semua' },
+        ].map((p) => (
+          <button
+            key={p.key}
+            onClick={() => setPeriod(p.key)}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              period === p.key
+                ? 'bg-dustyRose text-white'
+                : 'bg-white/30 text-gray-700 hover:bg-white/50'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
@@ -189,7 +244,9 @@ const SalesReport = () => {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-4">Belum ada penjualan</td>
+                  <td colSpan="7" className="text-center py-4">
+                    Belum ada penjualan pada periode ini
+                  </td>
                 </tr>
               ) : (
                 filtered.map((it) => (
