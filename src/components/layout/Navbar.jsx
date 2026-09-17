@@ -13,13 +13,15 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, profile, logout, isAuthenticated, isAdmin } = useAuth();
 
+  // Logout dari navbar, langsung arahkan ke halaman tamu
+  // Tidak memakai window.location.reload agar transisi lebih halus
   const handleLogout = async () => {
     try {
       await logout();
       toast.success('Logout berhasil');
-      navigate('/toko');
-      window.location.reload();
+      navigate('/toko', { replace: true });
     } catch (error) {
+      console.error('Logout error:', error);
       toast.error('Logout gagal');
     }
   };

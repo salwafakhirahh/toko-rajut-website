@@ -23,7 +23,10 @@ function App() {
       <Router>
         <Layout>
           <Routes>
+            {/* Redirect halaman root ke halaman toko */}
             <Route path="/" element={<Navigate to="/toko" replace />} />
+
+            {/* Halaman tamu */}
             <Route path="/toko" element={<HomePage />} />
             <Route path="/toko/products" element={<ProductsPage />} />
             <Route path="/toko/product/:id" element={<ProductDetailPage />} />
@@ -31,12 +34,17 @@ function App() {
             <Route path="/toko/checkout" element={<CheckoutPage />} />
             <Route path="/toko/login" element={<LoginPage />} />
             <Route path="/toko/register" element={<RegisterPage />} />
-            <Route path="/toko/admin/*" element={<AdminPage />} />
             <Route path="/toko/orders" element={<MyOrdersPage />} />
-            <Route path="/toko/orders/:id" element={<OrderDetailPage />} /> 
+            <Route path="/toko/orders/:id" element={<OrderDetailPage />} />
+
+            {/* Halaman admin, semua sub-route ditangani oleh AdminPage */}
+            <Route path="/toko/admin/*" element={<AdminPage />} />
+
+            {/* Halaman 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>
+
         <Toaster
           position="top-center"
           reverseOrder={false}
