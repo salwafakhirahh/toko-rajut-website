@@ -3,6 +3,7 @@ import { FiCamera, FiSave, FiUser, FiMail, FiPhone, FiMapPin } from 'react-icons
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
+import AdminLayout from './AdminLayout';
 import toast from 'react-hot-toast';
 
 const AdminProfile = () => {
@@ -103,120 +104,122 @@ const AdminProfile = () => {
   if (loading) return <LoadingSpinner message="Memuat profil..." />;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Profil Admin</h1>
-      <p className="text-gray-600 mb-6">Kelola informasi pribadi Anda</p>
+    <AdminLayout>
+      <div className="p-6 max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Profil Admin</h1>
+        <p className="text-gray-600 mb-6">Kelola informasi pribadi Anda</p>
 
-      <form onSubmit={handleSave} className="bg-white/60 backdrop-blur rounded-2xl shadow-lg p-6 space-y-6">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            {form.avatar_url ? (
-              <img
-                src={form.avatar_url}
-                alt="Avatar"
-                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-full bg-dustyRose/20 flex items-center justify-center border-4 border-white shadow-lg">
-                <FiUser className="w-12 h-12 text-dustyRose" />
-              </div>
-            )}
+        <form onSubmit={handleSave} className="bg-white/60 backdrop-blur rounded-2xl shadow-lg p-6 space-y-6">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              {form.avatar_url ? (
+                <img
+                  src={form.avatar_url}
+                  alt="Avatar"
+                  className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+              ) : (
+                <div className="w-28 h-28 rounded-full bg-dustyRose/20 flex items-center justify-center border-4 border-white shadow-lg">
+                  <FiUser className="w-12 h-12 text-dustyRose" />
+                </div>
+              )}
 
-            <label className="absolute bottom-0 right-0 bg-dustyRose text-white p-2 rounded-full cursor-pointer hover:bg-coral transition-colors shadow-md">
-              <FiCamera className="w-4 h-4" />
+              <label className="absolute bottom-0 right-0 bg-dustyRose text-white p-2 rounded-full cursor-pointer hover:bg-coral transition-colors shadow-md">
+                <FiCamera className="w-4 h-4" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleUpload}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+            {uploading && <p className="text-sm text-gray-500">Mengunggah foto...</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap</label>
+            <div className="relative">
+              <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleUpload}
-                disabled={uploading}
+                type="text"
+                name="full_name"
+                value={form.full_name}
+                onChange={handleChange}
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                placeholder="Nama lengkap"
               />
-            </label>
+            </div>
           </div>
-          {uploading && <p className="text-sm text-gray-500">Mengunggah foto...</p>}
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap</label>
-          <div className="relative">
-            <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              name="full_name"
-              value={form.full_name}
-              onChange={handleChange}
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-              placeholder="Nama lengkap"
-            />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+            <div className="relative">
+              <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="email"
+                value={user?.email || ''}
+                disabled
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-100 border border-white/40 text-gray-500 cursor-not-allowed"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Email tidak dapat diubah</p>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-          <div className="relative">
-            <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="email"
-              value={user?.email || ''}
-              disabled
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-100 border border-white/40 text-gray-500 cursor-not-allowed"
-            />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Telepon</label>
+            <div className="relative">
+              <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                placeholder="Nomor telepon"
+              />
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Email tidak dapat diubah</p>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Telepon</label>
-          <div className="relative">
-            <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-              placeholder="Nomor telepon"
-            />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Alamat</label>
+            <div className="relative">
+              <FiMapPin className="absolute left-4 top-3 text-gray-400" />
+              <textarea
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                rows="3"
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                placeholder="Alamat lengkap"
+              />
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Alamat</label>
-          <div className="relative">
-            <FiMapPin className="absolute left-4 top-3 text-gray-400" />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
             <textarea
-              name="address"
-              value={form.address}
+              name="bio"
+              value={form.bio}
               onChange={handleChange}
               rows="3"
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-              placeholder="Alamat lengkap"
+              className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+              placeholder="Ceritakan sedikit tentang Anda"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
-          <textarea
-            name="bio"
-            value={form.bio}
-            onChange={handleChange}
-            rows="3"
-            className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-            placeholder="Ceritakan sedikit tentang Anda"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full flex items-center justify-center gap-2 bg-dustyRose text-white py-3 rounded-xl hover:bg-coral transition-colors font-semibold disabled:opacity-50"
-        >
-          <FiSave />
-          {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-        </button>
-      </form>
-    </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 bg-dustyRose text-white py-3 rounded-xl hover:bg-coral transition-colors font-semibold disabled:opacity-50"
+          >
+            <FiSave />
+            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+          </button>
+        </form>
+      </div>
+    </AdminLayout>
   );
 };
 
