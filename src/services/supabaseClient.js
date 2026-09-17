@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const getProducts = async () => {
   const { data, error } = await supabase
     .from('products')
-    .select('*, categories(id, name, slug)') 
+    .select('*, categories(id, name, slug)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -252,6 +252,22 @@ export const getProductReviews = async (productId) => {
   return data;
 };
 
+export const getProductRatingSummary = async (productId) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('rating')
+    .eq('product_id', productId);
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    return { average: 0, count: 0 };
+  }
+  const total = data.reduce((sum, r) => sum + (r.rating || 0), 0);
+  return {
+    average: Number((total / data.length).toFixed(1)),
+    count: data.length,
+  };
+};
+
 export const addReview = async (reviewData) => {
   const { data, error } = await supabase
     .from('reviews')
@@ -259,6 +275,25 @@ export const addReview = async (reviewData) => {
     .select();
   if (error) throw error;
   return data[0];
+};
+
+export const updateReview = async (reviewId, { rating, review }) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .update({ rating, review, updated_at: new Date() })
+    .eq('id', reviewId)
+    .select();
+  if (error) throw error;
+  return data[0];
+};
+
+export const deleteReview = async (reviewId) => {
+  const { error } = await supabase
+    .from('reviews')
+    .delete()
+    .eq('id', reviewId);
+  if (error) throw error;
+  return true;
 };
 
 export const checkUserReview = async (userId, productId, orderId) => {
@@ -273,15 +308,52 @@ export const checkUserReview = async (userId, productId, orderId) => {
   return data;
 };
 
-export const getUserReviews = async (userId) => {
+export const getMyReviewForProduct = async (userId, productId) => {
   const { data, error } = await supabase
     .from('reviews')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
   if (error) throw error;
   return data;
 };
 
+export const getUserReviews = async (userId) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const canUserReviewProduct = async (userId, productId) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, status, order_items!inner(product_id)')
+    .eq('user_id', userId)
+    .eq('status', 'delivered')
+    .eq('order_items.product_id', productId);
+  if (error) throw error;
+  return data && data.length > 0;
+};
+
+export const getDeliveredOrderIdForProduct = async (userId, productId) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, status, order_items!inner(product_id)')
+    .eq('user_id', userId)
+    .eq('status', 'delivered')
+    .eq('order_items.product_id', productId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.id || null;
+};
 
 // USER SERVICES
 export const getAllProfiles = async () => {
