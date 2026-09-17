@@ -35,8 +35,9 @@ const Navbar = () => {
             <FiArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Portfolio</span>
           </a>
-          <Link to="/toko" className="text-xl font-bold text-dustyRose">
-            Urban Knitters
+          <Link to="/toko" className="flex items-center gap-2">
+            <img src="/images/logo.jpg" alt="Urban Knitters" className="w-8 h-8 object-contain rounded-full" />
+            <span className="text-xl font-bold text-dustyRose">Urban Knitters</span>
           </Link>
         </div>
 
