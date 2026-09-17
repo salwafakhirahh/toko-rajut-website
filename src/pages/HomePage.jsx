@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { getProducts, getCategories } from '../services/supabaseClient';
 import ProductGrid from '../components/customer/ProductGrid';
+import AboutStore from '../components/customer/AboutStore';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const HomePage = () => {
@@ -46,7 +47,6 @@ const HomePage = () => {
     return iconMap[slug] || <FiStar className="w-7 h-7" />;
   };
 
-  // Handle search dari Beranda
   const handleSearch = (e) => {
     e.preventDefault();
     if (search.trim()) {
@@ -232,6 +232,9 @@ const HomePage = () => {
 
         <ProductGrid products={products} />
       </section>
+
+      {/* Section Tentang Urban Knitters */}
+      <AboutStore />
 
       {/* Banner Promo */}
       <section className="max-w-7xl mx-auto px-4 py-10">
