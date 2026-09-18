@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { FiHome, FiTruck } from 'react-icons/fi';
+import { FiHome, FiTruck, FiDollarSign, FiCreditCard, FiSmartphone } from 'react-icons/fi';
 import PickupForm from './PickupForm';
 import DeliveryForm from './DeliveryForm';
 import OrderSummary from './OrderSummary';
 
 const CheckoutForm = ({ cartItems, total, onSuccess }) => {
   const [method, setMethod] = useState('pickup');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   const [customerData, setCustomerData] = useState({
     name: '',
     phone: '',
@@ -15,7 +16,7 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSuccess({ method, ...customerData });
+    onSuccess({ method, paymentMethod, ...customerData });
   };
 
   const options = [
@@ -33,8 +34,30 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
     },
   ];
 
+  const paymentOptions = [
+    {
+      value: 'cod',
+      label: 'Cash on Delivery (COD)',
+      desc: 'Bayar tunai saat pesanan diterima',
+      icon: <FiDollarSign className="w-6 h-6" />,
+    },
+    {
+      value: 'transfer',
+      label: 'Transfer Bank',
+      desc: 'Transfer ke rekening toko sebelum dikirim',
+      icon: <FiCreditCard className="w-6 h-6" />,
+    },
+    {
+      value: 'ewallet',
+      label: 'E-Wallet',
+      desc: 'OVO, GoPay, DANA, ShopeePay',
+      icon: <FiSmartphone className="w-6 h-6" />,
+    },
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Metode Pemesanan */}
       <div className="glass rounded-2xl p-6">
         <h3 className="text-xl font-bold mb-4 text-gray-800">Metode Pemesanan</h3>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -84,13 +107,98 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
         </div>
       </div>
 
+      {/* Metode Pembayaran */}
+      <div className="glass rounded-2xl p-6">
+        <h3 className="text-xl font-bold mb-4 text-gray-800">Metode Pembayaran</h3>
+        <div className="space-y-3">
+          {paymentOptions.map((pay) => (
+            <button
+              key={pay.value}
+              type="button"
+              onClick={() => setPaymentMethod(pay.value)}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                paymentMethod === pay.value
+                  ? 'bg-gradient-to-r from-dustyRose/20 to-coral/10 border-dustyRose shadow-lg'
+                  : 'bg-white/30 border-white/40 hover:border-dustyRose/50 hover:bg-white/50'
+              }`}
+            >
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                  paymentMethod === pay.value
+                    ? 'bg-dustyRose text-white shadow-md'
+                    : 'bg-dustyRose/20 text-dustyRose'
+                }`}
+              >
+                {pay.icon}
+              </div>
+              <div className="flex-1">
+                <h4
+                  className={`font-bold mb-1 ${
+                    paymentMethod === pay.value ? 'text-dustyRose' : 'text-gray-800'
+                  }`}
+                >
+                  {pay.label}
+                </h4>
+                <p className="text-xs text-gray-600">{pay.desc}</p>
+              </div>
+              <div
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                  paymentMethod === pay.value
+                    ? 'border-dustyRose bg-dustyRose'
+                    : 'border-gray-300 bg-white/50'
+                }`}
+              >
+                {paymentMethod === pay.value && (
+                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {paymentMethod === 'transfer' && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm">
+            <p className="font-semibold text-blue-700 mb-2">Rekening Tujuan</p>
+            <p className="text-blue-600">Bank BCA: 1234567890</p>
+            <p className="text-blue-600">a/n Urban Knitters</p>
+            <p className="text-xs text-blue-500 mt-2">
+              Setelah transfer, konfirmasi ke WhatsApp admin agar pesanan segera diproses.
+            </p>
+          </div>
+        )}
+
+        {paymentMethod === 'ewallet' && (
+          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl text-sm">
+            <p className="font-semibold text-purple-700 mb-2">E-Wallet Tujuan</p>
+            <p className="text-purple-600">OVO / GoPay / DANA: 081234567890</p>
+            <p className="text-xs text-purple-500 mt-2">
+              Kirim bukti transfer ke WhatsApp admin setelah melakukan pembayaran.
+            </p>
+          </div>
+        )}
+
+        {paymentMethod === 'cod' && method === 'pickup' && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm">
+            <p className="text-yellow-700">
+              Untuk metode COD dengan pengambilan di toko, pembayaran dilakukan tunai saat Anda
+              datang mengambil pesanan.
+            </p>
+          </div>
+        )}
+      </div>
+
       {method === 'pickup' ? (
         <PickupForm data={customerData} onChange={setCustomerData} />
       ) : (
         <DeliveryForm data={customerData} onChange={setCustomerData} />
       )}
 
-      <OrderSummary items={cartItems} total={total} />
+      <OrderSummary
+        items={cartItems}
+        total={total}
+        paymentMethod={paymentMethod}
+        deliveryMethod={method}
+      />
 
       <button
         type="submit"
