@@ -18,6 +18,7 @@ const AdminProfile = () => {
     bio: '',
     avatar_url: '',
   });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (profile) {
@@ -33,7 +34,9 @@ const AdminProfile = () => {
   }, [profile]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const handleUpload = async (e) => {
@@ -73,16 +76,37 @@ const AdminProfile = () => {
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.full_name.trim()) newErrors.full_name = 'Nama lengkap wajib diisi';
+    else if (form.full_name.trim().length < 3) newErrors.full_name = 'Nama minimal 3 karakter';
+    if (form.phone && !/^[0-9+\-\s]{8,20}$/.test(form.phone.trim())) {
+      newErrors.phone = 'Format nomor telepon tidak valid';
+    }
+    if (form.address && form.address.trim().length > 500) {
+      newErrors.address = 'Alamat maksimal 500 karakter';
+    }
+    if (form.bio && form.bio.trim().length > 300) {
+      newErrors.bio = 'Bio maksimal 300 karakter';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (!user) return;
+    if (!validateForm()) {
+      toast.error('Mohon periksa kembali data yang belum lengkap');
+      return;
+    }
 
     setSaving(true);
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: form.full_name,
+          full_name: form.full_name.trim(),
           phone: form.phone,
           address: form.address,
           bio: form.bio,
@@ -109,7 +133,7 @@ const AdminProfile = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Profil Admin</h1>
         <p className="text-gray-600 mb-6">Kelola informasi pribadi Anda</p>
 
-        <form onSubmit={handleSave} className="bg-white/60 backdrop-blur rounded-2xl shadow-lg p-6 space-y-6">
+        <form onSubmit={handleSave} className="bg-white/60 backdrop-blur rounded-2xl shadow-lg p-6 space-y-6" noValidate>
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               {form.avatar_url ? (
@@ -139,7 +163,9 @@ const AdminProfile = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Nama Lengkap <span className="text-red-500">*</span>
+            </label>
             <div className="relative">
               <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -147,10 +173,13 @@ const AdminProfile = () => {
                 name="full_name"
                 value={form.full_name}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.full_name ? 'border-red-400' : 'border-white/40'
+                }`}
                 placeholder="Nama lengkap"
               />
             </div>
+            {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
           </div>
 
           <div>
@@ -176,10 +205,13 @@ const AdminProfile = () => {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.phone ? 'border-red-400' : 'border-white/40'
+                }`}
                 placeholder="Nomor telepon"
               />
             </div>
+            {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
           </div>
 
           <div>
@@ -191,10 +223,13 @@ const AdminProfile = () => {
                 value={form.address}
                 onChange={handleChange}
                 rows="3"
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/80 border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.address ? 'border-red-400' : 'border-white/40'
+                }`}
                 placeholder="Alamat lengkap"
               />
             </div>
+            {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
           </div>
 
           <div>
@@ -204,9 +239,12 @@ const AdminProfile = () => {
               value={form.bio}
               onChange={handleChange}
               rows="3"
-              className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+              className={`w-full px-4 py-3 rounded-xl bg-white/80 border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                errors.bio ? 'border-red-400' : 'border-white/40'
+              }`}
               placeholder="Ceritakan sedikit tentang Anda"
             />
+            {errors.bio && <p className="text-xs text-red-500 mt-1">{errors.bio}</p>}
           </div>
 
           <button

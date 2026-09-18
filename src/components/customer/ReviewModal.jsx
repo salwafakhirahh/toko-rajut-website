@@ -17,6 +17,7 @@ const ReviewModal = ({
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [review, setReview] = useState('');
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -27,14 +28,35 @@ const ReviewModal = ({
       setRating(5);
       setReview('');
     }
+    setErrors({});
   }, [existingReview, isOpen]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!rating || rating < 1 || rating > 5) {
+      newErrors.rating = 'Rating wajib dipilih antara 1 sampai 5 bintang';
+    }
+    if (!review.trim()) {
+      newErrors.review = 'Ulasan wajib diisi';
+    } else if (review.trim().length < 5) {
+      newErrors.review = 'Ulasan minimal 5 karakter';
+    } else if (review.trim().length > 500) {
+      newErrors.review = 'Ulasan maksimal 500 karakter';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Mohon periksa kembali data yang belum lengkap');
+      return;
+    }
     setLoading(true);
     try {
       if (existingReview) {
-        await updateReview(existingReview.id, { rating, review });
+        await updateReview(existingReview.id, { rating, review: review.trim() });
         toast.success('Ulasan berhasil diperbarui!');
       } else {
         await addReview({
@@ -42,7 +64,7 @@ const ReviewModal = ({
           user_id: user.id,
           order_id: orderId,
           rating,
-          review,
+          review: review.trim(),
           user_name: profile?.full_name || user.email,
           product_name: product.product_name,
         });
@@ -85,15 +107,20 @@ const ReviewModal = ({
               </h3>
               <p className="text-sm text-gray-600 mb-6">{product?.product_name}</p>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Rating</label>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Rating <span className="text-red-500">*</span>
+                  </label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setRating(star)}
+                        onClick={() => {
+                          setRating(star);
+                          if (errors.rating) setErrors((prev) => ({ ...prev, rating: '' }));
+                        }}
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(0)}
                         className="transition-transform hover:scale-110"
@@ -108,23 +135,39 @@ const ReviewModal = ({
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {rating === 5 ? 'Sangat Puas' :
-                     rating === 4 ? 'Puas' :
-                     rating === 3 ? 'Cukup' :
-                     rating === 2 ? 'Kurang' : 'Sangat Kurang'}
-                  </p>
+                  {errors.rating ? (
+                    <p className="text-xs text-red-500 mt-2">{errors.rating}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-2">
+                      {rating === 5 ? 'Sangat Puas' :
+                       rating === 4 ? 'Puas' :
+                       rating === 3 ? 'Cukup' :
+                       rating === 2 ? 'Kurang' : 'Sangat Kurang'}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Ulasan</label>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Ulasan <span className="text-red-500">*</span>
+                  </label>
                   <textarea
                     value={review}
-                    onChange={(e) => setReview(e.target.value)}
+                    onChange={(e) => {
+                      setReview(e.target.value);
+                      if (errors.review) setErrors((prev) => ({ ...prev, review: '' }));
+                    }}
                     placeholder="Ceritakan pengalaman Anda dengan produk ini..."
                     rows="4"
-                    className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose resize-none"
+                    className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose resize-none ${
+                      errors.review ? 'border-red-400' : 'border-white/40'
+                    }`}
                   />
+                  {errors.review ? (
+                    <p className="text-xs text-red-500 mt-1">{errors.review}</p>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-1">{review.length}/500 karakter</p>
+                  )}
                 </div>
 
                 <button

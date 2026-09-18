@@ -36,6 +36,7 @@ const ProductForm = () => {
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchData();
@@ -43,11 +44,9 @@ const ProductForm = () => {
 
   const fetchData = async () => {
     try {
-      // Ambil daftar kategori DULU
       const categoriesData = await getCategories();
       setCategories(categoriesData);
 
-      // Kalau edit, ambil data produk
       if (isEdit) {
         const product = await getProductById(id);
         setFormData({
@@ -55,7 +54,7 @@ const ProductForm = () => {
           description: product.description || '',
           price: product.price || '',
           stock: product.stock || '',
-          category_id: product.category_id || '',  // ← PASTIKAN category_id
+          category_id: product.category_id || '',
           image_url: product.image_url || '',
           discount: product.discount || 0,
         });
@@ -72,6 +71,9 @@ const ProductForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleImageChange = (e) => {
@@ -99,12 +101,11 @@ const ProductForm = () => {
         description: '',
       });
 
-      // Refresh daftar kategori
       const updatedCategories = await getCategories();
       setCategories(updatedCategories);
 
-      // Set kategori baru sebagai yang dipilih
       setFormData({ ...formData, category_id: newCategory.id });
+      setErrors((prev) => ({ ...prev, category_id: '' }));
       setNewCategoryName('');
       setShowCategoryInput(false);
 
@@ -116,17 +117,45 @@ const ProductForm = () => {
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name || !formData.name.trim()) {
+      newErrors.name = 'Nama produk wajib diisi';
+    } else if (formData.name.trim().length < 3) {
+      newErrors.name = 'Nama produk minimal 3 karakter';
+    }
+
+    if (!formData.category_id) {
+      newErrors.category_id = 'Kategori produk wajib dipilih';
+    }
+
+    if (!formData.price || Number(formData.price) <= 0) {
+      newErrors.price = 'Harga wajib diisi dan lebih dari 0';
+    }
+
+    if (formData.stock === '' || Number(formData.stock) < 0) {
+      newErrors.stock = 'Stok wajib diisi dan tidak boleh negatif';
+    }
+
+    const discount = Number(formData.discount) || 0;
+    if (discount < 0 || discount > 100) {
+      newErrors.discount = 'Diskon harus antara 0 sampai 100 persen';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Validasi
-    if (!formData.category_id) {
-      toast.error('Pilih kategori terlebih dahulu');
-      setLoading(false);
+    if (!validateForm()) {
+      toast.error('Mohon periksa kembali data yang belum lengkap');
       return;
     }
 
+    setLoading(true);
     const loadingToast = toast.loading('Menyimpan produk...');
 
     try {
@@ -137,6 +166,7 @@ const ProductForm = () => {
 
       const data = {
         ...formData,
+        name: formData.name.trim(),
         image_url: imageUrl,
         discount: parseInt(formData.discount) || 0,
       };
@@ -163,7 +193,6 @@ const ProductForm = () => {
     label: cat.name,
   }));
 
-  // Hitung preview harga final
   const price = parseInt(formData.price) || 0;
   const discount = parseInt(formData.discount) || 0;
   const finalPrice = price - (price * discount / 100);
@@ -181,14 +210,14 @@ const ProductForm = () => {
 
       <div className="admin-card max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">
-          {isEdit ? '✏️ Edit Produk' : '➕ Tambah Produk Baru'}
+          {isEdit ? 'Edit Produk' : 'Tambah Produk Baru'}
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {/* Nama Produk */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Nama Produk *
+              Nama Produk <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -196,8 +225,13 @@ const ProductForm = () => {
               value={formData.name}
               onChange={handleChange}
               placeholder="Contoh: Baju Rajut Polos"
-              className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+              className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                errors.name ? 'border-red-400' : 'border-white/40'
+              }`}
             />
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+            )}
           </div>
 
           {/* Kategori */}
@@ -205,7 +239,7 @@ const ProductForm = () => {
             <div className="flex items-center justify-between mb-2">
               <label className="flex items-center gap-2 text-gray-700 font-medium">
                 <FiFolder className="text-dustyRose" />
-                Kategori *
+                Kategori <span className="text-red-500">*</span>
               </label>
               {!showCategoryInput && (
                 <button
@@ -269,16 +303,27 @@ const ProductForm = () => {
               </div>
             )}
 
-            <CustomSelect
-              options={categoryOptions}
-              value={formData.category_id}
-              onChange={(value) => setFormData({ ...formData, category_id: value })}
-              placeholder="Pilih Kategori"
-            />
+            <div className={errors.category_id ? 'ring-2 ring-red-400 rounded-lg' : ''}>
+              <CustomSelect
+                options={categoryOptions}
+                value={formData.category_id}
+                onChange={(value) => {
+                  setFormData({ ...formData, category_id: value });
+                  if (errors.category_id) {
+                    setErrors((prev) => ({ ...prev, category_id: '' }));
+                  }
+                }}
+                placeholder="Pilih Kategori"
+              />
+            </div>
+
+            {errors.category_id && (
+              <p className="text-xs text-red-500 mt-1">{errors.category_id}</p>
+            )}
 
             {categories.length === 0 && !showCategoryInput && (
               <p className="text-xs text-red-500 mt-2">
-                ⚠️ Belum ada kategori. Klik "Tambah Kategori Baru" untuk membuat.
+                Belum ada kategori. Klik "Tambah Kategori Baru" untuk membuat.
               </p>
             )}
           </div>
@@ -287,7 +332,7 @@ const ProductForm = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Harga (Rp) *
+                Harga (Rp) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -295,12 +340,18 @@ const ProductForm = () => {
                 value={formData.price}
                 onChange={handleChange}
                 placeholder="150000"
-                className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                min="0"
+                className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.price ? 'border-red-400' : 'border-white/40'
+                }`}
               />
+              {errors.price && (
+                <p className="text-xs text-red-500 mt-1">{errors.price}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Stok *
+                Stok <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -308,8 +359,14 @@ const ProductForm = () => {
                 value={formData.stock}
                 onChange={handleChange}
                 placeholder="10"
-                className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                min="0"
+                className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.stock ? 'border-red-400' : 'border-white/40'
+                }`}
               />
+              {errors.stock && (
+                <p className="text-xs text-red-500 mt-1">{errors.stock}</p>
+              )}
             </div>
           </div>
 
@@ -336,8 +393,13 @@ const ProductForm = () => {
                 min="0"
                 max="100"
                 placeholder="0"
-                className="w-full px-4 py-2 bg-white/60 rounded-lg border border-dustyRose/30 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full px-4 py-2 bg-white/60 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.discount ? 'border-red-400' : 'border-dustyRose/30'
+                }`}
               />
+              {errors.discount && (
+                <p className="text-xs text-red-500 mt-1">{errors.discount}</p>
+              )}
             </div>
 
             {discount > 0 && price > 0 && (

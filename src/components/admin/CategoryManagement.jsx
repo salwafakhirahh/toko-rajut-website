@@ -9,6 +9,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({ name: '', description: '' });
+  const [errors, setErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,15 +32,31 @@ const CategoryManagement = () => {
     }
   };
 
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Nama kategori wajib diisi';
+    else if (formData.name.trim().length < 3) newErrors.name = 'Nama kategori minimal 3 karakter';
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Mohon periksa kembali data yang belum lengkap');
+      return;
+    }
+
     const loadingToast = toast.loading('Menyimpan...');
     try {
       if (editingId) {
-        await updateCategory(editingId, formData);
+        await updateCategory(editingId, { ...formData, name: formData.name.trim() });
         toast.success('Kategori berhasil diupdate!', { id: loadingToast });
       } else {
-        await addCategory(formData);
+        await addCategory({ ...formData, name: formData.name.trim() });
         toast.success('Kategori berhasil ditambahkan!', { id: loadingToast });
       }
       setFormData({ name: '', description: '' });
@@ -55,6 +72,7 @@ const CategoryManagement = () => {
     setFormData({ name: category.name, description: category.description || '' });
     setEditingId(category.id);
     setShowForm(true);
+    setErrors({});
   };
 
   const handleDeleteClick = (id) => {
@@ -97,6 +115,7 @@ const CategoryManagement = () => {
             setShowForm(!showForm);
             setEditingId(null);
             setFormData({ name: '', description: '' });
+            setErrors({});
           }}
           className="flex items-center gap-2 px-4 py-2 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all"
         >
@@ -122,21 +141,28 @@ const CategoryManagement = () => {
           <h2 className="text-xl font-bold mb-4">
             {editingId ? 'Edit Kategori' : 'Tambah Kategori Baru'}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Nama Kategori *</label>
+              <label className="block text-gray-700 font-medium mb-2">
+                Nama Kategori <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                onChange={(e) => handleChange('name', e.target.value)}
+                className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.name ? 'border-red-400' : 'border-white/40'
+                }`}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 font-medium mb-2">Deskripsi</label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => handleChange('description', e.target.value)}
                 className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose h-20 resize-none"
               />
             </div>
@@ -146,7 +172,10 @@ const CategoryManagement = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setErrors({});
+                }}
                 className="px-6 py-2 bg-white/30 text-gray-700 rounded-lg hover:bg-white/50"
               >
                 Batal

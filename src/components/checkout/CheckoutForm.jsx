@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiHome, FiTruck, FiDollarSign, FiCreditCard, FiSmartphone } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import PickupForm from './PickupForm';
 import DeliveryForm from './DeliveryForm';
 import OrderSummary from './OrderSummary';
@@ -13,9 +14,43 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
     address: '',
     message: '',
   });
+  const [errors, setErrors] = useState({});
+
+  const handleCustomerChange = (data) => {
+    setCustomerData(data);
+    if (errors.name && data.name) setErrors((prev) => ({ ...prev, name: '' }));
+    if (errors.phone && data.phone) setErrors((prev) => ({ ...prev, phone: '' }));
+    if (errors.address && data.address) setErrors((prev) => ({ ...prev, address: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!customerData.name || !customerData.name.trim()) {
+      newErrors.name = 'Nama penerima wajib diisi';
+    } else if (customerData.name.trim().length < 3) {
+      newErrors.name = 'Nama minimal 3 karakter';
+    }
+    if (!customerData.phone || !customerData.phone.trim()) {
+      newErrors.phone = 'Nomor telepon wajib diisi';
+    } else if (!/^[0-9+\-\s]{8,20}$/.test(customerData.phone.trim())) {
+      newErrors.phone = 'Format nomor telepon tidak valid';
+    }
+    if (method === 'delivery' && (!customerData.address || !customerData.address.trim())) {
+      newErrors.address = 'Alamat pengiriman wajib diisi';
+    }
+    if (!paymentMethod) {
+      newErrors.paymentMethod = 'Pilih metode pembayaran';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Mohon periksa kembali data yang belum lengkap');
+      return;
+    }
     onSuccess({ method, paymentMethod, ...customerData });
   };
 
@@ -56,8 +91,7 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Metode Pemesanan */}
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div className="glass rounded-2xl p-6">
         <h3 className="text-xl font-bold mb-4 text-gray-800">Metode Pemesanan</h3>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -107,7 +141,6 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
         </div>
       </div>
 
-      {/* Metode Pembayaran */}
       <div className="glass rounded-2xl p-6">
         <h3 className="text-xl font-bold mb-4 text-gray-800">Metode Pembayaran</h3>
         <div className="space-y-3">
@@ -156,6 +189,10 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
           ))}
         </div>
 
+        {errors.paymentMethod && (
+          <p className="text-xs text-red-500 mt-2">{errors.paymentMethod}</p>
+        )}
+
         {paymentMethod === 'transfer' && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm">
             <p className="font-semibold text-blue-700 mb-2">Rekening Tujuan</p>
@@ -188,9 +225,9 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
       </div>
 
       {method === 'pickup' ? (
-        <PickupForm data={customerData} onChange={setCustomerData} />
+        <PickupForm data={customerData} onChange={handleCustomerChange} errors={errors} />
       ) : (
-        <DeliveryForm data={customerData} onChange={setCustomerData} />
+        <DeliveryForm data={customerData} onChange={handleCustomerChange} errors={errors} />
       )}
 
       <OrderSummary

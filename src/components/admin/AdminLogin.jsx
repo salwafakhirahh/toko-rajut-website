@@ -7,22 +7,48 @@ import { loginWithToken } from '../../services/authService';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [token, setToken] = useState('');
+  const [formData, setFormData] = useState({ email: '', password: '', token: '' });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email admin wajib diisi';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Format email tidak valid';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password wajib diisi';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password minimal 6 karakter';
+    }
+    if (!formData.token.trim()) {
+      newErrors.token = 'Token admin wajib diisi';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Mohon periksa kembali data yang belum lengkap');
+      return;
+    }
     setLoading(true);
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
       });
-
       if (error) throw error;
 
       const { data: profile, error: profileError } = await supabase
@@ -36,8 +62,8 @@ const AdminLogin = () => {
         throw new Error('Akun ini bukan admin');
       }
 
-      await loginWithToken(token);
-      localStorage.setItem('adminToken', token);
+      await loginWithToken(formData.token);
+      localStorage.setItem('adminToken', formData.token);
       toast.success('Login admin berhasil!');
       navigate('/toko/admin/dashboard');
     } catch (error) {
@@ -59,47 +85,71 @@ const AdminLogin = () => {
           <p className="text-gray-600 mt-2">Khusus admin toko</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Email Admin</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Email Admin <span className="text-red-500">*</span>
+            </label>
             <div className="relative">
               <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 placeholder="admin@tokorajut.com"
-                className="w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.email ? 'border-red-400' : 'border-white/40'
+                }`}
               />
             </div>
+            {errors.email && (
+              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Password</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Password <span className="text-red-500">*</span>
+            </label>
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.password ? 'border-red-400' : 'border-white/40'
+                }`}
               />
             </div>
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Token Admin</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Token Admin <span className="text-red-500">*</span>
+            </label>
             <div className="relative">
               <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
+                name="token"
+                value={formData.token}
+                onChange={handleChange}
                 placeholder="Masukkan token admin"
-                className="w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.token ? 'border-red-400' : 'border-white/40'
+                }`}
               />
             </div>
+            {errors.token && (
+              <p className="text-xs text-red-500 mt-1">{errors.token}</p>
+            )}
           </div>
 
           <button
