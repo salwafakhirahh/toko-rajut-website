@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiEdit2, FiX, FiCheck, FiAlertTriangle, FiSearch } from 'react-icons/fi';
+import { FiEdit2, FiX, FiCheck, FiAlertTriangle, FiSearch, FiShoppingBag } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import StatusBadge from '../common/StatusBadge';
@@ -216,7 +216,21 @@ const OrderManagement = () => {
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Manajemen Pesanan</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Manajemen Pesanan</h1>
+          <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+            <FiShoppingBag className="w-4 h-4" />
+            Total: <strong className="text-dustyRose">{orders.length}</strong> pesanan
+            {(search || statusFilter !== 'all') && (
+              <>
+                <span className="text-gray-400">·</span>
+                Ditampilkan: <strong className="text-dustyRose">{filtered.length}</strong>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-4 mb-6">
         <div className="relative flex-1 min-w-[240px]">
@@ -248,26 +262,33 @@ const OrderManagement = () => {
           <table className="admin-table">
             <thead>
               <tr>
+                <th className="w-12 text-center">No</th>
                 <th>No. Pesanan</th>
                 <th>Customer</th>
                 <th>Total</th>
                 <th>Metode</th>
                 <th>Status</th>
-                <th>Aksi</th>
+                <th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">
-                    Tidak ada pesanan yang cocok
+                  <td colSpan="7" className="text-center py-8 text-gray-500">
+                    <FiShoppingBag className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    {search || statusFilter !== 'all'
+                      ? 'Tidak ada pesanan yang cocok'
+                      : 'Belum ada pesanan'}
                   </td>
                 </tr>
               ) : (
-                filtered.map((order) => {
+                filtered.map((order, index) => {
                   const isFinal = isFinalStatus(order.status);
                   return (
-                    <tr key={order.id}>
+                    <tr key={order.id} className="hover:bg-white/20 transition-colors">
+                      <td className="text-center font-medium text-gray-700">
+                        {index + 1}
+                      </td>
                       <td className="font-mono text-xs">{order.order_number}</td>
                       <td>
                         <div className="font-medium">{order.customer_name}</div>
@@ -283,20 +304,22 @@ const OrderManagement = () => {
                         <StatusBadge status={order.status} />
                       </td>
                       <td>
-                        {isFinal ? (
-                          <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                            <FiCheck className="w-3.5 h-3.5" />
-                            Selesai
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleOpenModal(order)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold shadow-md"
-                          >
-                            <FiEdit2 className="w-3.5 h-3.5" />
-                            Ubah Status
-                          </button>
-                        )}
+                        <div className="flex justify-center">
+                          {isFinal ? (
+                            <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
+                              <FiCheck className="w-3.5 h-3.5" />
+                              Selesai
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenModal(order)}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold shadow-md"
+                            >
+                              <FiEdit2 className="w-3.5 h-3.5" />
+                              Ubah Status
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
