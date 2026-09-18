@@ -197,7 +197,6 @@ const ProductForm = () => {
               onChange={handleChange}
               placeholder="Contoh: Baju Rajut Polos"
               className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-              required
             />
           </div>
 
@@ -297,7 +296,6 @@ const ProductForm = () => {
                 onChange={handleChange}
                 placeholder="150000"
                 className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-                required
               />
             </div>
             <div>
@@ -311,7 +309,6 @@ const ProductForm = () => {
                 onChange={handleChange}
                 placeholder="10"
                 className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
-                required
               />
             </div>
           </div>
