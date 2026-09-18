@@ -60,11 +60,11 @@ const ProductManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Manajemen Produk</h1>
-          <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-            <FiPackage className="w-4 h-4" />
+          <h1 className="text-2xl font-bold text-gray-800">Manajemen Produk</h1>
+          <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+            <FiPackage className="w-3.5 h-3.5" />
             Total: <strong className="text-dustyRose">{products.length}</strong> produk
             {search && (
               <>
@@ -76,56 +76,50 @@ const ProductManagement = () => {
         </div>
         <Link
           to="/toko/admin/products/add"
-          className="flex items-center gap-2 px-5 py-2.5 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all shadow-md"
+          className="flex items-center gap-2 px-4 py-2 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all shadow-md text-sm"
         >
-          <FiPlus /> Tambah Produk
+          <FiPlus className="w-4 h-4" /> Tambah Produk
         </Link>
       </div>
 
       <div className="admin-card">
-        <div className="mb-5 relative">
-          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <div className="mb-4 relative">
+          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
             placeholder="Cari produk..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
           />
         </div>
 
         <div className="overflow-x-auto rounded-xl">
-          <table className="w-full min-w-[1100px]">
+          <table className="w-full text-sm">
             <thead>
               <tr className="bg-white/40">
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-12">
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-10">
                   No
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-16">
+                <th className="px-2 py-2.5 text-left text-xs font-bold text-gray-700 uppercase w-14">
                   Gambar
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Nama
+                <th className="px-2 py-2.5 text-left text-xs font-bold text-gray-700 uppercase">
+                  Nama Produk
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-28">
+                <th className="px-2 py-2.5 text-left text-xs font-bold text-gray-700 uppercase w-24">
                   Kategori
                 </th>
-                <th className="px-3 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider w-28">
-                  Harga Asli
+                <th className="px-2 py-2.5 text-right text-xs font-bold text-gray-700 uppercase w-24">
+                  Harga
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-20">
-                  Diskon
-                </th>
-                <th className="px-3 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider w-28">
-                  Harga Diskon
-                </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-24">
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-16">
                   Stok
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-20">
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-20">
                   Rating
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-40">
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-32">
                   Aksi
                 </th>
               </tr>
@@ -133,9 +127,11 @@ const ProductManagement = () => {
             <tbody className="divide-y divide-white/30">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="text-center py-8 text-gray-500">
-                    <FiPackage className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                    {search ? 'Tidak ada produk yang cocok' : 'Belum ada produk'}
+                  <td colSpan="8" className="text-center py-8 text-gray-500">
+                    <FiPackage className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                    <span className="text-sm">
+                      {search ? 'Tidak ada produk yang cocok' : 'Belum ada produk'}
+                    </span>
                   </td>
                 </tr>
               ) : (
@@ -146,54 +142,56 @@ const ProductManagement = () => {
 
                   return (
                     <tr key={product.id} className="hover:bg-white/20 transition-colors">
-                      <td className="px-3 py-3 text-center font-medium text-gray-700">
+                      <td className="px-2 py-2 text-center font-medium text-gray-700 text-xs">
                         {index + 1}
                       </td>
 
-                      <td className="px-3 py-3">
+                      <td className="px-2 py-2">
                         <img
                           src={product.image_url || `https://picsum.photos/50/50?random=${product.id}`}
                           alt={product.name}
-                          className="w-12 h-12 object-cover rounded-lg shadow-sm"
+                          className="w-10 h-10 object-cover rounded-lg shadow-sm"
                         />
                       </td>
 
-                      <td className="px-3 py-3">
+                      <td className="px-2 py-2">
                         <div className="font-medium text-gray-800 text-sm line-clamp-1">
                           {product.name}
                         </div>
                         <div className="text-xs text-gray-500 line-clamp-1">
-                          {product.description?.substring(0, 40) || '-'}
+                          {product.categories?.name || '-'}
                         </div>
                       </td>
 
-                      <td className="px-3 py-3">
-                        <span className="inline-block text-xs px-2 py-1 bg-white/50 rounded-full text-gray-700 whitespace-nowrap">
+                      <td className="px-2 py-2">
+                        <span className="inline-block text-xs px-2 py-0.5 bg-white/50 rounded-full text-gray-700 whitespace-nowrap">
                           {product.categories?.name || '-'}
                         </span>
                       </td>
 
-                      <td className="px-3 py-3 text-right text-sm text-gray-700 whitespace-nowrap">
-                        Rp {product.price?.toLocaleString('id-ID')}
-                      </td>
-
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
                         {hasDiscount ? (
-                          <span className="inline-block px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold whitespace-nowrap">
-                            {product.discount}%
-                          </span>
+                          <>
+                            <div className="text-xs text-gray-400 line-through">
+                              Rp {product.price?.toLocaleString('id-ID')}
+                            </div>
+                            <div className="text-sm font-bold text-dustyRose">
+                              Rp {finalPrice.toLocaleString('id-ID')}
+                            </div>
+                            <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold">
+                              -{product.discount}%
+                            </span>
+                          </>
                         ) : (
-                          <span className="text-gray-300 text-xs">-</span>
+                          <div className="text-sm font-bold text-dustyRose">
+                            Rp {product.price?.toLocaleString('id-ID')}
+                          </div>
                         )}
                       </td>
 
-                      <td className="px-3 py-3 text-right text-sm font-bold text-dustyRose whitespace-nowrap">
-                        Rp {finalPrice.toLocaleString('id-ID')}
-                      </td>
-
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-2 py-2 text-center">
                         <span
-                          className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                          className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
                             isOutOfStock
                               ? 'bg-red-100 text-red-700'
                               : 'bg-green-100 text-green-700'
@@ -203,40 +201,37 @@ const ProductManagement = () => {
                         </span>
                       </td>
 
-                      <td className="px-3 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <FiStar className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                      <td className="px-2 py-2 text-center">
+                        <div className="flex items-center justify-center gap-0.5">
+                          <FiStar className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                           <span className="text-xs font-semibold text-gray-700">
                             {product.rating?.toFixed(1) || '0.0'}
                           </span>
                         </div>
                       </td>
 
-                      <td className="px-3 py-3">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-2 py-2">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => navigate(`/toko/admin/products/detail/${product.id}`)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-xs font-semibold whitespace-nowrap"
+                            className="p-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
                             title="Lihat Detail"
                           >
                             <FiEye className="w-3.5 h-3.5" />
-                            <span>Lihat</span>
                           </button>
                           <button
                             onClick={() => navigate(`/toko/admin/products/edit/${product.id}`)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-xs font-semibold whitespace-nowrap"
+                            className="p-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
                             title="Edit"
                           >
                             <FiEdit className="w-3.5 h-3.5" />
-                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteClick(product.id)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-xs font-semibold whitespace-nowrap"
+                            className="p-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
                             title="Hapus"
                           >
                             <FiTrash2 className="w-3.5 h-3.5" />
-                            <span>Hapus</span>
                           </button>
                         </div>
                       </td>
