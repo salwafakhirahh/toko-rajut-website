@@ -66,7 +66,13 @@ const ProductManagement = () => {
           <h1 className="text-3xl font-bold text-gray-800">Manajemen Produk</h1>
           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
             <FiPackage className="w-4 h-4" />
-            Total: {products.length} produk
+            Total: <strong className="text-dustyRose">{products.length}</strong> produk
+            {search && (
+              <>
+                <span className="text-gray-400">·</span>
+                Ditampilkan: <strong className="text-dustyRose">{filtered.length}</strong>
+              </>
+            )}
           </p>
         </div>
         <Link
@@ -92,9 +98,12 @@ const ProductManagement = () => {
 
         {/* Table */}
         <div className="overflow-x-auto rounded-xl">
-          <table className="w-full min-w-[900px]">
+          <table className="w-full min-w-[1000px]">
             <thead>
               <tr className="bg-white/40">
+                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-12">
+                  No
+                </th>
                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-16">
                   Gambar
                 </th>
@@ -127,19 +136,24 @@ const ProductManagement = () => {
             <tbody className="divide-y divide-white/30">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-8 text-gray-500">
+                  <td colSpan="10" className="text-center py-8 text-gray-500">
                     <FiPackage className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                    Tidak ada produk
+                    {search ? 'Tidak ada produk yang cocok' : 'Belum ada produk'}
                   </td>
                 </tr>
               ) : (
-                filtered.map((product) => {
+                filtered.map((product, index) => {
                   const finalPrice = calculateFinalPrice(product);
                   const hasDiscount = (product.discount || 0) > 0;
                   const isOutOfStock = product.stock === 0;
 
                   return (
                     <tr key={product.id} className="hover:bg-white/20 transition-colors">
+                      {/* No */}
+                      <td className="px-3 py-3 text-center font-medium text-gray-700">
+                        {index + 1}
+                      </td>
+
                       {/* Gambar */}
                       <td className="px-3 py-3">
                         <img

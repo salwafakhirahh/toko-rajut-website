@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit, FiTrash2, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSearch, FiFolder } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import ConfirmModal from '../common/ConfirmModal';
@@ -108,8 +108,20 @@ const CategoryManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Manajemen Kategori</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Manajemen Kategori</h1>
+          <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+            <FiFolder className="w-4 h-4" />
+            Total: <strong className="text-dustyRose">{categories.length}</strong> kategori
+            {search && (
+              <>
+                <span className="text-gray-400">·</span>
+                Ditampilkan: <strong className="text-dustyRose">{filtered.length}</strong>
+              </>
+            )}
+          </p>
+        </div>
         <button
           onClick={() => {
             setShowForm(!showForm);
@@ -117,7 +129,7 @@ const CategoryManagement = () => {
             setFormData({ name: '', description: '' });
             setErrors({});
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all shadow-md"
         >
           <FiPlus /> Tambah Kategori
         </button>
@@ -186,41 +198,56 @@ const CategoryManagement = () => {
       )}
 
       <div className="admin-card">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Nama</th>
-              <th>Deskripsi</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead>
               <tr>
-                <td colSpan="3" className="text-center py-4">
-                  Tidak ada kategori yang cocok
-                </td>
+                <th className="w-12 text-center">No</th>
+                <th>Nama</th>
+                <th>Deskripsi</th>
+                <th className="w-24 text-center">Aksi</th>
               </tr>
-            ) : (
-              filtered.map((cat) => (
-                <tr key={cat.id}>
-                  <td className="font-medium text-gray-800">{cat.name}</td>
-                  <td>{cat.description || '-'}</td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEdit(cat)} className="p-2 text-blue-500 hover:text-blue-700">
-                        <FiEdit />
-                      </button>
-                      <button onClick={() => handleDeleteClick(cat.id)} className="p-2 text-red-500 hover:text-red-700">
-                        <FiTrash2 />
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-8 text-gray-500">
+                    <FiFolder className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    {search ? 'Tidak ada kategori yang cocok' : 'Belum ada kategori'}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filtered.map((cat, index) => (
+                  <tr key={cat.id} className="hover:bg-white/20 transition-colors">
+                    <td className="text-center font-medium text-gray-700">
+                      {index + 1}
+                    </td>
+                    <td className="font-medium text-gray-800">{cat.name}</td>
+                    <td className="text-sm text-gray-600">{cat.description || '-'}</td>
+                    <td>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleEdit(cat)}
+                          className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all"
+                          title="Edit"
+                        >
+                          <FiEdit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(cat.id)}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                          title="Hapus"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <ConfirmModal
