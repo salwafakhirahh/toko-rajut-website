@@ -60,7 +60,6 @@ const ProductManagement = () => {
 
   return (
     <AdminLayout>
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Manajemen Produk</h1>
@@ -84,7 +83,6 @@ const ProductManagement = () => {
       </div>
 
       <div className="admin-card">
-        {/* Search */}
         <div className="mb-5 relative">
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
@@ -96,9 +94,8 @@ const ProductManagement = () => {
           />
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto rounded-xl">
-          <table className="w-full min-w-[1000px]">
+          <table className="w-full min-w-[1100px]">
             <thead>
               <tr className="bg-white/40">
                 <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-12">
@@ -128,7 +125,7 @@ const ProductManagement = () => {
                 <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-20">
                   Rating
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-28">
+                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-40">
                   Aksi
                 </th>
               </tr>
@@ -149,12 +146,10 @@ const ProductManagement = () => {
 
                   return (
                     <tr key={product.id} className="hover:bg-white/20 transition-colors">
-                      {/* No */}
                       <td className="px-3 py-3 text-center font-medium text-gray-700">
                         {index + 1}
                       </td>
 
-                      {/* Gambar */}
                       <td className="px-3 py-3">
                         <img
                           src={product.image_url || `https://picsum.photos/50/50?random=${product.id}`}
@@ -163,7 +158,6 @@ const ProductManagement = () => {
                         />
                       </td>
 
-                      {/* Nama */}
                       <td className="px-3 py-3">
                         <div className="font-medium text-gray-800 text-sm line-clamp-1">
                           {product.name}
@@ -173,19 +167,16 @@ const ProductManagement = () => {
                         </div>
                       </td>
 
-                      {/* Kategori */}
                       <td className="px-3 py-3">
                         <span className="inline-block text-xs px-2 py-1 bg-white/50 rounded-full text-gray-700 whitespace-nowrap">
                           {product.categories?.name || '-'}
                         </span>
                       </td>
 
-                      {/* Harga Asli */}
                       <td className="px-3 py-3 text-right text-sm text-gray-700 whitespace-nowrap">
                         Rp {product.price?.toLocaleString('id-ID')}
                       </td>
 
-                      {/* Diskon */}
                       <td className="px-3 py-3 text-center">
                         {hasDiscount ? (
                           <span className="inline-block px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold whitespace-nowrap">
@@ -196,12 +187,10 @@ const ProductManagement = () => {
                         )}
                       </td>
 
-                      {/* Harga Diskon */}
                       <td className="px-3 py-3 text-right text-sm font-bold text-dustyRose whitespace-nowrap">
                         Rp {finalPrice.toLocaleString('id-ID')}
                       </td>
 
-                      {/* Stok */}
                       <td className="px-3 py-3 text-center">
                         <span
                           className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
@@ -214,7 +203,6 @@ const ProductManagement = () => {
                         </span>
                       </td>
 
-                      {/* Rating */}
                       <td className="px-3 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <FiStar className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
@@ -224,29 +212,31 @@ const ProductManagement = () => {
                         </div>
                       </td>
 
-                      {/* Aksi */}
                       <td className="px-3 py-3">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => navigate(`/toko/admin/products/detail/${product.id}`)}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-xs font-semibold whitespace-nowrap"
                             title="Lihat Detail"
                           >
-                            <FiEye className="w-4 h-4" />
+                            <FiEye className="w-3.5 h-3.5" />
+                            <span>Lihat</span>
                           </button>
                           <button
                             onClick={() => navigate(`/toko/admin/products/edit/${product.id}`)}
-                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-xs font-semibold whitespace-nowrap"
                             title="Edit"
                           >
-                            <FiEdit className="w-4 h-4" />
+                            <FiEdit className="w-3.5 h-3.5" />
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteClick(product.id)}
-                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-xs font-semibold whitespace-nowrap"
                             title="Hapus"
                           >
-                            <FiTrash2 className="w-4 h-4" />
+                            <FiTrash2 className="w-3.5 h-3.5" />
+                            <span>Hapus</span>
                           </button>
                         </div>
                       </td>
