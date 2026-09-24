@@ -5,7 +5,22 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export const getProducts = async () => {
+export const getProducts = async (includeInactive = false) => {
+  let query = supabase
+    .from('products')
+    .select('*, categories(id, name, slug)')
+    .order('created_at', { ascending: false });
+
+  if (!includeInactive) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+};
+
+export const getAllProductsAdmin = async () => {
   const { data, error } = await supabase
     .from('products')
     .select('*, categories(id, name, slug)')
@@ -30,6 +45,11 @@ export const addProduct = async (productData) => {
     .replace(/[^a-z0-9]/g, '-')
     .replace(/-+/g, '-');
 
+  const stockValue = parseInt(productData.stock, 10);
+  if (isNaN(stockValue) || stockValue < 0) {
+    throw new Error('Stok harus berupa angka dan tidak boleh negatif');
+  }
+
   const { data, error } = await supabase
     .from('products')
     .insert([{
@@ -37,11 +57,12 @@ export const addProduct = async (productData) => {
       slug: slug,
       description: productData.description || '',
       price: parseFloat(productData.price),
-      stock: parseInt(productData.stock),
+      stock: stockValue,
       category_id: productData.category_id,
       image_url: productData.image_url || null,
       discount: parseInt(productData.discount) || 0,
       is_promo: productData.is_promo || false,
+      is_active: true,
     }])
     .select();
   if (error) throw error;
@@ -49,13 +70,18 @@ export const addProduct = async (productData) => {
 };
 
 export const updateProduct = async (id, productData) => {
+  const stockValue = parseInt(productData.stock, 10);
+  if (isNaN(stockValue) || stockValue < 0) {
+    throw new Error('Stok harus berupa angka dan tidak boleh negatif');
+  }
+
   const { data, error } = await supabase
     .from('products')
     .update({
       name: productData.name,
       description: productData.description || '',
       price: parseFloat(productData.price),
-      stock: parseInt(productData.stock),
+      stock: stockValue,
       category_id: productData.category_id,
       image_url: productData.image_url || null,
       discount: parseInt(productData.discount) || 0,
@@ -68,6 +94,31 @@ export const updateProduct = async (id, productData) => {
   return data[0];
 };
 
+// Nonaktifkan produk (tidak muncul di katalog customer)
+export const deactivateProduct = async (id) => {
+  const { data, error } = await supabase
+    .from('products')
+    .update({ is_active: false, updated_at: new Date() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Aktifkan kembali produk
+export const activateProduct = async (id) => {
+  const { data, error } = await supabase
+    .from('products')
+    .update({ is_active: true, updated_at: new Date() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Hapus permanen, hanya untuk keperluan darurat
 export const deleteProduct = async (id) => {
   const { error } = await supabase
     .from('products')
