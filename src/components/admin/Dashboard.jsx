@@ -3,16 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   FiPackage, FiShoppingBag, FiDollarSign, FiUsers,
   FiTrendingUp, FiClock, FiEdit, FiEye, FiAlertTriangle,
-  FiBarChart2, FiList, FiGrid
+  FiBarChart2, FiList, FiGrid, FiAward
 } from 'react-icons/fi';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import {
   getProducts, getOrders, getCustomers, getAdmins,
+  getTopSellingProducts,
 } from '../../services/supabaseClient';
 import { calculateFinalPrice } from '../../utils/priceHelper';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [admins, setAdmins] = useState([]);
+  const [topSelling, setTopSelling] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
@@ -34,16 +36,20 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [productsData, ordersData, customersData, adminsData] = await Promise.all([
-        getProducts(),
-        getOrders(),
-        getCustomers(),
-        getAdmins(),
-      ]);
+      const [productsData, ordersData, customersData, adminsData, topSellingData] =
+        await Promise.all([
+          getProducts(),
+          getOrders(),
+          getCustomers(),
+          getAdmins(),
+          getTopSellingProducts(10),
+        ]);
+
       setProducts(productsData || []);
       setOrders(ordersData || []);
       setCustomers(customersData || []);
       setAdmins(adminsData || []);
+      setTopSelling(topSellingData || []);
     } catch (error) {
       console.error(error);
       toast.error('Gagal memuat data dashboard');
@@ -69,7 +75,9 @@ const Dashboard = () => {
       .filter((o) => o.status === 'delivered')
       .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const pendingOrders = orders.filter((o) => o.status === 'pending').length;
-    const lowStockProducts = products.filter((p) => (p.stock || 0) <= 5);
+    const lowStockProducts = products.filter(
+      (p) => (p.stock || 0) <= 5 && (p.stock || 0) > 0
+    );
     const outOfStockProducts = products.filter((p) => (p.stock || 0) === 0);
 
     return {
@@ -113,21 +121,16 @@ const Dashboard = () => {
 
   const categoryChartData = useMemo(() => {
     const map = new Map();
-    orders.forEach((o) => {
-      if (!o.id) return;
-    });
-
     products.forEach((p) => {
       const catName = p.categories?.name || 'Tanpa Kategori';
       map.set(catName, (map.get(catName) || 0) + 1);
     });
-
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
   }, [products]);
 
-  const topProducts = useMemo(() => {
+  const latestProducts = useMemo(() => {
     return [...products]
-      .sort((a, b) => (b.stock || 0) - (a.stock || 0))
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       .slice(0, 5);
   }, [products]);
 
@@ -265,13 +268,13 @@ const Dashboard = () => {
               <FiAlertTriangle className="text-amber-500" />
               Produk Stok Rendah
             </h2>
-            {stats.lowStockProducts.length === 0 ? (
+            {stats.lowStockProducts.length === 0 && stats.outOfStockProducts.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-6">
                 Semua produk stoknya aman
               </p>
             ) : (
               <div className="space-y-2 max-h-72 overflow-y-auto">
-                {stats.lowStockProducts.slice(0, 8).map((p) => (
+                {[...stats.outOfStockProducts, ...stats.lowStockProducts].slice(0, 8).map((p) => (
                   <div
                     key={p.id}
                     className="flex items-center justify-between gap-3 p-3 bg-white/40 rounded-lg border border-white/40"
@@ -415,6 +418,74 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+
+          <div className="admin-card lg:col-span-2">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <FiAward className="text-dustyRose" />
+              Produk Terlaris
+            </h2>
+
+            {topSelling.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-8">
+                Belum ada data penjualan produk
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-white/40">
+                      <th className="px-3 py-2 text-center text-xs font-bold text-gray-700 uppercase w-14 rounded-l-lg">
+                        Rank
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
+                        Nama Produk
+                      </th>
+                      <th className="px-3 py-2 text-center text-xs font-bold text-gray-700 uppercase w-28">
+                        Terjual
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-bold text-gray-700 uppercase w-36 rounded-r-lg">
+                        Pendapatan
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/30">
+                    {topSelling.map((item, index) => (
+                      <tr key={item.product_id} className="hover:bg-white/20">
+                        <td className="px-3 py-2 text-center">
+                          {index === 0 ? (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-yellow-400 text-white font-bold text-xs">
+                              1
+                            </span>
+                          ) : index === 1 ? (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-300 text-white font-bold text-xs">
+                              2
+                            </span>
+                          ) : index === 2 ? (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-600 text-white font-bold text-xs">
+                              3
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 font-semibold text-xs">
+                              {index + 1}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 font-medium text-gray-800 line-clamp-1">
+                          {item.product_name || 'Produk tidak dikenal'}
+                        </td>
+                        <td className="px-3 py-2 text-center font-semibold text-dustyRose">
+                          {item.total_quantity} pcs
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold text-gray-700 whitespace-nowrap">
+                          {formatPrice(item.total_revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -433,7 +504,7 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          {topProducts.length === 0 ? (
+          {latestProducts.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-8">
               Belum ada produk
             </p>
@@ -451,7 +522,7 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/30">
-                  {topProducts.map((p) => (
+                  {latestProducts.map((p) => (
                     <tr key={p.id} className="hover:bg-white/20">
                       <td className="px-3 py-2">
                         <img

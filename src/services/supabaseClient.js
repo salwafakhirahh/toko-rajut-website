@@ -607,3 +607,41 @@ export const setDefaultPickupContact = async (userId, contactId) => {
   if (error) throw error;
   return data;
 };
+
+// STATISTIK PRODUK TERLARIS
+export const getTopSellingProducts = async (limit = 10) => {
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('product_id, product_name, quantity, subtotal');
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Kelompokkan berdasarkan product_id
+  const map = new Map();
+
+  data.forEach((item) => {
+    const key = item.product_id;
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        product_id: key,
+        product_name: item.product_name,
+        total_quantity: 0,
+        total_revenue: 0,
+      });
+    }
+
+    const entry = map.get(key);
+    entry.total_quantity += Number(item.quantity || 0);
+    entry.total_revenue += Number(item.subtotal || 0);
+  });
+
+  // Ubah ke array, urutkan berdasarkan quantity
+  const sorted = Array.from(map.values()).sort(
+    (a, b) => b.total_quantity - a.total_quantity
+  );
+
+  return sorted.slice(0, limit);
+};
