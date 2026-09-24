@@ -34,7 +34,6 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-cream via-roseQuartz to-dustyRose overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside className="w-64 bg-white/30 backdrop-blur-xl border-r border-white/40 p-4 flex flex-col overflow-y-auto">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-dustyRose flex items-center gap-2">
@@ -61,7 +60,6 @@ const AdminLayout = ({ children }) => {
             ))}
           </nav>
 
-          {/* Menu bawah: Profil Admin, lalu Logout */}
           <div className="mt-4 space-y-2 border-t border-white/40 pt-4">
             <Link
               to="/toko/admin/profile"
@@ -85,7 +83,6 @@ const AdminLayout = ({ children }) => {
           </div>
         </aside>
 
-        {/* Konten Utama */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">{children}</div>
         </main>

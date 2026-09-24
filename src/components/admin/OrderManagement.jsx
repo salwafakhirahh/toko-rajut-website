@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiEdit2, FiX, FiCheck, FiAlertTriangle, FiSearch, FiShoppingBag } from 'react-icons/fi';
+import {
+  FiEdit2, FiX, FiCheck, FiAlertTriangle, FiSearch,
+  FiShoppingBag, FiEye, FiPrinter
+} from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import StatusBadge from '../common/StatusBadge';
 import { getOrders, updateOrderStatus } from '../../services/supabaseClient';
+import { getOrderDetailById } from '../../services/reportService';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const getNextStatuses = (currentStatus) => {
@@ -20,9 +25,25 @@ const getNextStatuses = (currentStatus) => {
 
 const isFinalStatus = (status) => status === 'delivered' || status === 'cancelled';
 
+const paymentLabel = (method) => {
+  switch (method) {
+    case 'cod': return 'Tunai / COD';
+    case 'transfer': return 'Transfer Bank';
+    case 'ewallet': return 'E-Wallet';
+    default: return method || '-';
+  }
+};
+
+const deliveryLabel = (method) => {
+  switch (method) {
+    case 'pickup': return 'Ambil di Toko';
+    case 'delivery': return 'Kirim ke Alamat';
+    default: return method || '-';
+  }
+};
+
 const StatusModal = ({ order, isOpen, onClose, onChange }) => {
   const [confirmAction, setConfirmAction] = useState(null);
-
   if (!order) return null;
 
   const nextStatuses = getNextStatuses(order.status);
@@ -63,10 +84,7 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
             className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4"
           >
             <div className="glass rounded-2xl p-6 shadow-2xl border border-white/50 relative">
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                 <FiX className="w-5 h-5" />
               </button>
               <h3 className="text-lg font-bold text-gray-800 mb-2">
@@ -169,6 +187,8 @@ const OrderManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [printing, setPrinting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchOrders();
@@ -199,6 +219,76 @@ const OrderManagement = () => {
       toast.success('Status berhasil diupdate!', { id: loadingToast });
     } catch (error) {
       toast.error('Gagal update: ' + error.message, { id: loadingToast });
+    }
+  };
+
+  const handlePrintReceipt = async (orderId) => {
+    setPrinting(true);
+    const loadingToast = toast.loading('Menyiapkan struk...');
+    try {
+      const { order, items } = await getOrderDetailById(orderId);
+
+      const rows = items.map((it) => `
+        <tr>
+          <td>${it.product_name}</td>
+          <td style="text-align:center">${it.quantity}</td>
+          <td style="text-align:right">Rp ${Number(it.price).toLocaleString('id-ID')}</td>
+          <td style="text-align:right">Rp ${Number(it.subtotal).toLocaleString('id-ID')}</td>
+        </tr>`).join('');
+
+      const html = `
+        <html>
+        <head><title>Struk ${order.order_number}</title>
+        <style>
+          body { font-family: 'Courier New', monospace; padding: 20px; max-width: 320px; margin: 0 auto; color: #333; }
+          h1 { font-size: 18px; text-align: center; margin: 0 0 4px 0; }
+          .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 12px; }
+          .divider { border-top: 1px dashed #999; margin: 8px 0; }
+          .row { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; }
+          .label { color: #666; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+          th, td { padding: 4px 0; text-align: left; }
+          th { border-bottom: 1px solid #999; font-size: 11px; }
+          .total { font-size: 14px; font-weight: bold; margin-top: 8px; display: flex; justify-content: space-between; }
+          .footer { text-align: center; font-size: 11px; color: #888; margin-top: 16px; }
+        </style></head>
+        <body>
+          <h1>Urban Knitters</h1>
+          <div class="subtitle">Toko Rajut Handmade</div>
+          <div class="divider"></div>
+          <div class="row"><span class="label">No Pesanan</span><span>${order.order_number}</span></div>
+          <div class="row"><span class="label">Tanggal</span><span>${new Date(order.created_at).toLocaleString('id-ID')}</span></div>
+          <div class="row"><span class="label">Pelanggan</span><span>${order.customer_name || '-'}</span></div>
+          <div class="row"><span class="label">Telepon</span><span>${order.customer_phone || '-'}</span></div>
+          <div class="row"><span class="label">Pengiriman</span><span>${deliveryLabel(order.delivery_method)}</span></div>
+          <div class="row"><span class="label">Pembayaran</span><span>${paymentLabel(order.payment_method)}</span></div>
+          ${order.delivery_method === 'delivery' && order.delivery_address ? `<div class="row"><span class="label">Alamat</span><span style="text-align:right; max-width:180px">${order.delivery_address}</span></div>` : ''}
+          <div class="divider"></div>
+          <table>
+            <thead><tr>
+              <th>Produk</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Subtotal</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="divider"></div>
+          <div class="total"><span>TOTAL</span><span>Rp ${Number(order.total_amount).toLocaleString('id-ID')}</span></div>
+          <div class="divider"></div>
+          <div class="footer">Terima kasih telah berbelanja!</div>
+        </body>
+        </html>`;
+
+      const win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 300);
+
+      toast.success('Struk siap dicetak', { id: loadingToast });
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menyiapkan struk', { id: loadingToast });
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -268,7 +358,7 @@ const OrderManagement = () => {
                 <th>Total</th>
                 <th>Metode</th>
                 <th>Status</th>
-                <th className="text-center">Aksi</th>
+                <th className="text-center w-56">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -304,19 +394,32 @@ const OrderManagement = () => {
                         <StatusBadge status={order.status} />
                       </td>
                       <td>
-                        <div className="flex justify-center">
-                          {isFinal ? (
-                            <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                              <FiCheck className="w-3.5 h-3.5" />
-                              Selesai
-                            </span>
-                          ) : (
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => navigate(`/toko/admin/orders/detail/${order.id}`)}
+                            className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs font-semibold"
+                            title="Lihat detail"
+                          >
+                            <FiEye className="w-3.5 h-3.5" />
+                            Detail
+                          </button>
+                          <button
+                            onClick={() => handlePrintReceipt(order.id)}
+                            disabled={printing}
+                            className="flex items-center gap-1 px-2 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold disabled:opacity-50"
+                            title="Cetak struk"
+                          >
+                            <FiPrinter className="w-3.5 h-3.5" />
+                            Struk
+                          </button>
+                          {!isFinal && (
                             <button
                               onClick={() => handleOpenModal(order)}
-                              className="flex items-center gap-2 px-3 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold shadow-md"
+                              className="flex items-center gap-1 px-2 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-xs font-semibold"
+                              title="Ubah status"
                             >
                               <FiEdit2 className="w-3.5 h-3.5" />
-                              Ubah Status
+                              Status
                             </button>
                           )}
                         </div>
