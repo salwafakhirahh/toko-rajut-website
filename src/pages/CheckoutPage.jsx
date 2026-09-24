@@ -11,6 +11,7 @@ import {
   addAddress,
   getPickupContacts,
   addPickupContact,
+  getProductById,
 } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { calculateSubtotal, calculateFinalPrice } from '../utils/priceHelper';
@@ -91,7 +92,36 @@ const CheckoutPage = () => {
     return true;
   };
 
-  // Otomatis simpan data yang diisi manual ke daftar tersimpan
+  // Cek stok terkini dari database sebelum checkout
+  const validateStock = async () => {
+    try {
+      for (const item of cartItems) {
+        const latest = await getProductById(item.product_id);
+        const currentStock = latest?.stock || 0;
+
+        if (currentStock < 1) {
+          toast.error(
+            `Stok ${item.products?.name} sudah habis. Silakan hapus dari keranjang.`,
+            { duration: 6000 }
+          );
+          return false;
+        }
+
+        if (item.quantity > currentStock) {
+          toast.error(
+            `Stok ${item.products?.name} tidak cukup. Tersedia ${currentStock} pcs, di keranjang ${item.quantity} pcs.`,
+            { duration: 6000 }
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Gagal cek stok:', error);
+      return true; // Kalau gagal cek karena error, tetap lanjutkan
+    }
+  };
+
   const autoSaveCustomerData = async (data) => {
     if (!user) return;
 
@@ -134,7 +164,6 @@ const CheckoutPage = () => {
         }
       }
     } catch (saveError) {
-      // Jangan gagalkan checkout kalau auto-save bermasalah
       console.warn('Auto-save data customer gagal:', saveError);
     }
   };
@@ -145,6 +174,13 @@ const CheckoutPage = () => {
     const loadingToast = toast.loading('Memproses pesanan...');
 
     try {
+      // Cek stok terkini dari database
+      const stockOk = await validateStock();
+      if (!stockOk) {
+        toast.dismiss(loadingToast);
+        return;
+      }
+
       const total = cartItems.reduce(
         (sum, item) => sum + calculateSubtotal(item.products, item.quantity),
         0
@@ -182,11 +218,18 @@ const CheckoutPage = () => {
             price: finalPrice,
             subtotal: subtotal,
           }]);
+
+        // Kurangi stok produk setelah order item tersimpan
+        const currentStock = item.products?.stock || 0;
+        const newStock = Math.max(0, currentStock - item.quantity);
+
+        await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.product_id);
       }
 
       await clearCart(user.id);
-
-      // Otomatis simpan alamat atau kontak kalau belum tersimpan
       await autoSaveCustomerData(data);
 
       const totalItem = cartItems.reduce((sum, item) => sum + item.quantity, 0);

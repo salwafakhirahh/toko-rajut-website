@@ -124,18 +124,34 @@ const ProductForm = () => {
       newErrors.name = 'Nama produk wajib diisi';
     } else if (formData.name.trim().length < 3) {
       newErrors.name = 'Nama produk minimal 3 karakter';
+    } else if (formData.name.trim().length > 200) {
+      newErrors.name = 'Nama produk maksimal 200 karakter';
     }
 
     if (!formData.category_id) {
       newErrors.category_id = 'Kategori produk wajib dipilih';
     }
 
-    if (!formData.price || Number(formData.price) <= 0) {
-      newErrors.price = 'Harga wajib diisi dan lebih dari 0';
+    if (formData.price === '' || formData.price === null || formData.price === undefined) {
+      newErrors.price = 'Harga wajib diisi';
+    } else if (isNaN(Number(formData.price))) {
+      newErrors.price = 'Harga harus berupa angka';
+    } else if (Number(formData.price) <= 0) {
+      newErrors.price = 'Harga harus lebih dari 0';
+    } else if (Number(formData.price) > 999999999) {
+      newErrors.price = 'Harga terlalu besar';
     }
 
-    if (formData.stock === '' || Number(formData.stock) < 0) {
-      newErrors.stock = 'Stok wajib diisi dan tidak boleh negatif';
+    if (formData.stock === '' || formData.stock === null || formData.stock === undefined) {
+      newErrors.stock = 'Stok wajib diisi';
+    } else if (isNaN(Number(formData.stock))) {
+      newErrors.stock = 'Stok harus berupa angka';
+    } else if (Number(formData.stock) < 0) {
+      newErrors.stock = 'Stok tidak boleh negatif';
+    } else if (Number(formData.stock) > 999999) {
+      newErrors.stock = 'Stok terlalu besar';
+    } else if (!Number.isInteger(Number(formData.stock))) {
+      newErrors.stock = 'Stok harus bilangan bulat';
     }
 
     const discount = Number(formData.discount) || 0;
@@ -167,6 +183,8 @@ const ProductForm = () => {
       const data = {
         ...formData,
         name: formData.name.trim(),
+        price: Number(formData.price),
+        stock: parseInt(formData.stock, 10),
         image_url: imageUrl,
         discount: parseInt(formData.discount) || 0,
       };
@@ -341,6 +359,7 @@ const ProductForm = () => {
                 onChange={handleChange}
                 placeholder="150000"
                 min="0"
+                step="1"
                 className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.price ? 'border-red-400' : 'border-white/40'
                 }`}
@@ -360,6 +379,7 @@ const ProductForm = () => {
                 onChange={handleChange}
                 placeholder="10"
                 min="0"
+                step="1"
                 className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.stock ? 'border-red-400' : 'border-white/40'
                 }`}

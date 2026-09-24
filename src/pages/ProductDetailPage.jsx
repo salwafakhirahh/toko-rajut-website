@@ -88,6 +88,16 @@ const ProductDetailPage = () => {
       setTimeout(() => navigate('/toko/login'), 1000);
       return;
     }
+
+    if (!product || product.stock < 1) {
+      toast.error('Stok produk habis');
+      return;
+    }
+    if (quantity > product.stock) {
+      toast.error(`Stok tidak cukup. Maksimal ${product.stock} pcs`);
+      return;
+    }
+
     const loadingToast = toast.loading('Menambahkan ke keranjang...');
     try {
       await addToCart({ user_id: user.id, product_id: product.id, quantity });
@@ -134,6 +144,7 @@ const ProductDetailPage = () => {
   const discount = product.discount || 0;
   const finalPrice = price - (price * discount / 100);
   const hasDiscount = discount > 0;
+  const isOutOfStock = product.stock < 1;
 
   return (
     <div className="pt-6 px-4 pb-16">
@@ -150,6 +161,13 @@ const ProductDetailPage = () => {
             {hasDiscount && (
               <div className="absolute top-4 left-4 z-10 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                 Diskon {discount}%
+              </div>
+            )}
+            {isOutOfStock && (
+              <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
+                <span className="bg-white text-red-600 px-6 py-3 rounded-full text-lg font-bold shadow-lg">
+                  Stok Habis
+                </span>
               </div>
             )}
             <img
@@ -196,7 +214,14 @@ const ProductDetailPage = () => {
 
             <div className="space-y-2 mb-6 text-gray-700">
               <p><span className="font-medium">Kategori:</span> {product.categories?.name || '-'}</p>
-              <p><span className="font-medium">Stok:</span> {product.stock}</p>
+              <p>
+                <span className="font-medium">Stok:</span>{' '}
+                {isOutOfStock ? (
+                  <span className="text-red-600 font-semibold">Habis</span>
+                ) : (
+                  <span className="text-green-600 font-semibold">{product.stock} pcs</span>
+                )}
+              </p>
             </div>
 
             <div className="mb-6">
@@ -218,24 +243,47 @@ const ProductDetailPage = () => {
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="font-medium">Jumlah:</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 bg-white/30 rounded-full hover:bg-white/50">
-                      <FiMinus />
-                    </button>
-                    <span className="w-12 text-center font-bold">{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} className="p-2 bg-white/30 rounded-full hover:bg-white/50">
-                      <FiPlus />
-                    </button>
+                {!isOutOfStock && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-4">
+                      <span className="font-medium">Jumlah:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          disabled={quantity <= 1}
+                          className="p-2 bg-white/30 rounded-full hover:bg-white/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <FiMinus />
+                        </button>
+                        <span className="w-12 text-center font-bold">{quantity}</span>
+                        <button
+                          onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                          disabled={quantity >= product.stock}
+                          className="p-2 bg-white/30 rounded-full hover:bg-white/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <FiPlus />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 ml-20">
+                      Maksimal <strong>{product.stock}</strong> pcs
+                    </p>
                   </div>
-                </div>
+                )}
 
                 <div className="flex gap-4 mb-8">
-                  <button onClick={handleAddToCart} className="flex-1 py-3 bg-white/40 backdrop-blur-md text-gray-800 rounded-lg hover:bg-white/60 flex items-center justify-center gap-2 border border-white/40">
-                    <FiShoppingCart /> Tambah Keranjang
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isOutOfStock}
+                    className="flex-1 py-3 bg-white/40 backdrop-blur-md text-gray-800 rounded-lg hover:bg-white/60 flex items-center justify-center gap-2 border border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiShoppingCart /> {isOutOfStock ? 'Stok Habis' : 'Tambah Keranjang'}
                   </button>
-                  <button onClick={handleBuyNow} className="flex-1 py-3 bg-dustyRose text-white rounded-lg hover:bg-coral font-semibold">
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isOutOfStock}
+                    className="flex-1 py-3 bg-dustyRose text-white rounded-lg hover:bg-coral font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Beli Sekarang
                   </button>
                 </div>

@@ -27,7 +27,6 @@ const CartPage = () => {
     fetchCart();
   }, [user, isAdmin, navigate]);
 
-
   const fetchCart = async () => {
     try {
       const data = await getCart(user.id);
@@ -41,6 +40,16 @@ const CartPage = () => {
 
   const handleUpdateQuantity = async (id, quantity) => {
     if (quantity < 1) return;
+
+    // Cari item untuk cek stok
+    const item = cartItems.find((it) => it.id === id);
+    const maxStock = item?.products?.stock || 0;
+
+    if (quantity > maxStock) {
+      toast.error(`Stok tidak cukup. Maksimal ${maxStock} pcs`);
+      return;
+    }
+
     try {
       await updateCartItem(id, quantity);
       fetchCart();
@@ -97,6 +106,10 @@ const CartPage = () => {
     0
   );
 
+  const hasStockIssue = cartItems.some(
+    (item) => item.quantity > (item.products?.stock || 0)
+  );
+
   return (
     <div className="pt-6 px-4">
       <div className="max-w-4xl mx-auto">
@@ -118,6 +131,14 @@ const CartPage = () => {
           </div>
         ) : (
           <>
+            {hasStockIssue && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-700">
+                  Ada produk yang jumlahnya melebihi stok tersedia. Silakan kurangi jumlahnya sebelum checkout.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-4 mb-6">
               {cartItems.map((item) => (
                 <CartItem
@@ -138,9 +159,10 @@ const CartPage = () => {
               </div>
               <button
                 onClick={() => navigate('/toko/checkout')}
-                className="w-full py-3 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all font-semibold"
+                disabled={hasStockIssue}
+                className="w-full py-3 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Checkout
+                {hasStockIssue ? 'Perbaiki Jumlah Dulu' : 'Checkout'}
               </button>
             </div>
           </>
