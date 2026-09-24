@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiEdit2, FiX, FiCheck, FiAlertTriangle, FiSearch,
-  FiShoppingBag, FiEye, FiPrinter
+  FiShoppingBag, FiEye, FiPrinter, FiHome, FiTruck
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
@@ -12,7 +12,19 @@ import { getOrders, updateOrderStatus } from '../../services/supabaseClient';
 import { getOrderDetailById } from '../../services/reportService';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-const getNextStatuses = (currentStatus) => {
+// Status berikutnya, dibedakan per metode pengiriman
+const getNextStatuses = (currentStatus, deliveryMethod) => {
+  if (deliveryMethod === 'pickup') {
+    switch (currentStatus) {
+      case 'pending': return ['paid', 'cancelled'];
+      case 'paid': return ['delivered', 'cancelled'];
+      case 'delivered':
+      case 'cancelled': return [];
+      default: return [];
+    }
+  }
+
+  // delivery (kirim ke alamat)
   switch (currentStatus) {
     case 'pending': return ['paid', 'cancelled'];
     case 'paid': return ['shipped', 'cancelled'];
@@ -46,16 +58,24 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
   const [confirmAction, setConfirmAction] = useState(null);
   if (!order) return null;
 
-  const nextStatuses = getNextStatuses(order.status);
+  const nextStatuses = getNextStatuses(order.status, order.delivery_method);
   const isFinal = isFinalStatus(order.status);
+  const isPickup = order.delivery_method === 'pickup';
 
-  const statusInfo = {
-    pending: { label: 'Pending', desc: 'Pesanan baru masuk' },
-    paid: { label: 'Paid', desc: 'Sudah dibayar' },
-    shipped: { label: 'Shipped', desc: 'Sedang dikirim' },
-    delivered: { label: 'Delivered', desc: 'Sudah diterima customer' },
-    cancelled: { label: 'Cancelled', desc: 'Pesanan dibatalkan' },
-  };
+  const statusInfo = isPickup
+    ? {
+        pending: { label: 'Pending', desc: 'Pesanan baru masuk' },
+        paid: { label: 'Paid', desc: 'Sudah dibayar' },
+        delivered: { label: 'Delivered', desc: 'Sudah diambil customer di toko' },
+        cancelled: { label: 'Cancelled', desc: 'Pesanan dibatalkan' },
+      }
+    : {
+        pending: { label: 'Pending', desc: 'Pesanan baru masuk' },
+        paid: { label: 'Paid', desc: 'Sudah dibayar' },
+        shipped: { label: 'Shipped', desc: 'Sedang dikirim kurir' },
+        delivered: { label: 'Delivered', desc: 'Sudah diterima customer' },
+        cancelled: { label: 'Cancelled', desc: 'Pesanan dibatalkan' },
+      };
 
   const handleConfirm = () => {
     if (confirmAction) {
@@ -87,10 +107,26 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
               <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                 <FiX className="w-5 h-5" />
               </button>
+
               <h3 className="text-lg font-bold text-gray-800 mb-2">
                 {isFinal ? 'Status Pesanan' : 'Ubah Status Pesanan'}
               </h3>
-              <p className="text-xs text-gray-500 font-mono mb-4">{order.order_number}</p>
+              <p className="text-xs text-gray-500 font-mono mb-2">{order.order_number}</p>
+
+              <div className="mb-4 flex items-center gap-2">
+                {isPickup ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                    <FiHome className="w-3 h-3" />
+                    Ambil di Toko
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                    <FiTruck className="w-3 h-3" />
+                    Kirim ke Alamat
+                  </span>
+                )}
+              </div>
+
               <div className="mb-4 p-3 bg-white/40 rounded-xl border border-white/40">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Status saat ini:</span>
@@ -98,6 +134,7 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
                 </div>
                 <p className="text-xs text-gray-500 mt-2">{statusInfo[order.status]?.desc}</p>
               </div>
+
               {isFinal ? (
                 <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-xl border border-green-200">
                   <div className="flex items-start gap-3">
@@ -125,6 +162,21 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
                           Ubah status dari <span className="font-semibold">{statusInfo[order.status]?.label}</span> menjadi{' '}
                           <span className="font-semibold text-dustyRose">{statusInfo[confirmAction]?.label}</span>?
                         </p>
+                        {isPickup && confirmAction === 'delivered' && (
+                          <p className="text-xs text-amber-600 mt-2">
+                            Pastikan customer sudah mengambil pesanan dan membayar lunas.
+                          </p>
+                        )}
+                        {!isPickup && confirmAction === 'shipped' && (
+                          <p className="text-xs text-blue-600 mt-2">
+                            Pastikan paket sudah diserahkan ke kurir.
+                          </p>
+                        )}
+                        {!isPickup && confirmAction === 'delivered' && (
+                          <p className="text-xs text-green-600 mt-2">
+                            Pastikan paket sudah diterima customer.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -148,28 +200,34 @@ const StatusModal = ({ order, isOpen, onClose, onChange }) => {
               ) : (
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-3">Pilih status berikutnya:</p>
-                  <div className="space-y-2">
-                    {nextStatuses.map((status, index) => (
-                      <motion.button
-                        key={status}
-                        type="button"
-                        onClick={() => setConfirmAction(status)}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all flex items-center justify-between ${
-                          status === 'cancelled'
-                            ? 'bg-white/40 border-red-200 hover:border-red-400 hover:bg-red-50/50'
-                            : 'bg-white/40 border-white/40 hover:border-dustyRose/50 hover:bg-white/60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <StatusBadge status={status} />
-                          <span className="text-xs text-gray-500">{statusInfo[status]?.desc}</span>
-                        </div>
-                      </motion.button>
-                    ))}
-                  </div>
+                  {nextStatuses.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      Tidak ada status lanjutan
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {nextStatuses.map((status, index) => (
+                        <motion.button
+                          key={status}
+                          type="button"
+                          onClick={() => setConfirmAction(status)}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all flex items-center justify-between ${
+                            status === 'cancelled'
+                              ? 'bg-white/40 border-red-200 hover:border-red-400 hover:bg-red-50/50'
+                              : 'bg-white/40 border-white/40 hover:border-dustyRose/50 hover:bg-white/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <StatusBadge status={status} />
+                            <span className="text-xs text-gray-500">{statusInfo[status]?.desc}</span>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -187,6 +245,7 @@ const OrderManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [methodFilter, setMethodFilter] = useState('all');
   const [printing, setPrinting] = useState(false);
   const navigate = useNavigate();
 
@@ -299,7 +358,9 @@ const OrderManagement = () => {
       (o.customer_name || '').toLowerCase().includes(q) ||
       (o.customer_phone || '').toLowerCase().includes(q);
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchMethod =
+      methodFilter === 'all' || o.delivery_method === methodFilter;
+    return matchSearch && matchStatus && matchMethod;
   });
 
   if (loading) return <LoadingSpinner message="Memuat pesanan..." />;
@@ -312,7 +373,7 @@ const OrderManagement = () => {
           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
             <FiShoppingBag className="w-4 h-4" />
             Total: <strong className="text-dustyRose">{orders.length}</strong> pesanan
-            {(search || statusFilter !== 'all') && (
+            {(search || statusFilter !== 'all' || methodFilter !== 'all') && (
               <>
                 <span className="text-gray-400">·</span>
                 Ditampilkan: <strong className="text-dustyRose">{filtered.length}</strong>
@@ -333,6 +394,15 @@ const OrderManagement = () => {
             className="w-full pl-12 pr-4 py-3 rounded-full bg-white/60 backdrop-blur border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
           />
         </div>
+        <select
+          value={methodFilter}
+          onChange={(e) => setMethodFilter(e.target.value)}
+          className="px-4 py-3 rounded-full bg-white/60 backdrop-blur border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+        >
+          <option value="all">Semua Metode</option>
+          <option value="pickup">Ambil di Toko</option>
+          <option value="delivery">Kirim ke Alamat</option>
+        </select>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -366,7 +436,7 @@ const OrderManagement = () => {
                 <tr>
                   <td colSpan="7" className="text-center py-8 text-gray-500">
                     <FiShoppingBag className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                    {search || statusFilter !== 'all'
+                    {search || statusFilter !== 'all' || methodFilter !== 'all'
                       ? 'Tidak ada pesanan yang cocok'
                       : 'Belum ada pesanan'}
                   </td>
@@ -374,6 +444,7 @@ const OrderManagement = () => {
               ) : (
                 filtered.map((order, index) => {
                   const isFinal = isFinalStatus(order.status);
+                  const isPickup = order.delivery_method === 'pickup';
                   return (
                     <tr key={order.id} className="hover:bg-white/20 transition-colors">
                       <td className="text-center font-medium text-gray-700">
@@ -388,7 +459,17 @@ const OrderManagement = () => {
                         Rp {order.total_amount?.toLocaleString('id-ID')}
                       </td>
                       <td>
-                        <span className="capitalize">{order.delivery_method}</span>
+                        {isPickup ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold whitespace-nowrap">
+                            <FiHome className="w-3 h-3" />
+                            Ambil
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold whitespace-nowrap">
+                            <FiTruck className="w-3 h-3" />
+                            Kirim
+                          </span>
+                        )}
                       </td>
                       <td>
                         <StatusBadge status={order.status} />
