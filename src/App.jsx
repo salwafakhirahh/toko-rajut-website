@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
+import CustomerRoute from './components/common/CustomerRoute';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
@@ -27,17 +28,17 @@ function App() {
             {/* Redirect halaman root ke halaman toko */}
             <Route path="/" element={<Navigate to="/toko" replace />} />
 
-            {/* Halaman tamu */}
-            <Route path="/toko" element={<HomePage />} />
-            <Route path="/toko/products" element={<ProductsPage />} />
-            <Route path="/toko/product/:id" element={<ProductDetailPage />} />
-            <Route path="/toko/cart" element={<CartPage />} />
-            <Route path="/toko/checkout" element={<CheckoutPage />} />
-            <Route path="/toko/login" element={<LoginPage />} />
-            <Route path="/toko/register" element={<RegisterPage />} />
-            <Route path="/toko/orders" element={<MyOrdersPage />} />
-            <Route path="/toko/orders/:id" element={<OrderDetailPage />} />
-            <Route path="/toko/profile" element={<CustomerProfilePage />} />
+            {/* Halaman tamu / customer, hanya bisa diakses kalau bukan admin */}
+            <Route path="/toko" element={<CustomerRoute><HomePage /></CustomerRoute>} />
+            <Route path="/toko/products" element={<CustomerRoute><ProductsPage /></CustomerRoute>} />
+            <Route path="/toko/product/:id" element={<CustomerRoute><ProductDetailPage /></CustomerRoute>} />
+            <Route path="/toko/cart" element={<CustomerRoute><CartPage /></CustomerRoute>} />
+            <Route path="/toko/checkout" element={<CustomerRoute><CheckoutPage /></CustomerRoute>} />
+            <Route path="/toko/login" element={<CustomerRoute><LoginPage /></CustomerRoute>} />
+            <Route path="/toko/register" element={<CustomerRoute><RegisterPage /></CustomerRoute>} />
+            <Route path="/toko/orders" element={<CustomerRoute><MyOrdersPage /></CustomerRoute>} />
+            <Route path="/toko/orders/:id" element={<CustomerRoute><OrderDetailPage /></CustomerRoute>} />
+            <Route path="/toko/profile" element={<CustomerRoute><CustomerProfilePage /></CustomerRoute>} />
 
             {/* Halaman admin, semua sub-route ditangani oleh AdminPage */}
             <Route path="/toko/admin/*" element={<AdminPage />} />
