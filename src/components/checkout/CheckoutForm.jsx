@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { FiHome, FiTruck, FiDollarSign, FiCreditCard, FiSmartphone } from 'react-icons/fi';
+import {
+  FiHome, FiTruck, FiDollarSign, FiCreditCard, FiSmartphone, FiInfo
+} from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import PickupForm from './PickupForm';
 import DeliveryForm from './DeliveryForm';
@@ -15,12 +17,52 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
     message: '',
   });
   const [errors, setErrors] = useState({});
+  const [copiedFromPrevious, setCopiedFromPrevious] = useState(false);
 
   const handleCustomerChange = (data) => {
     setCustomerData(data);
     if (errors.name && data.name) setErrors((prev) => ({ ...prev, name: '' }));
     if (errors.phone && data.phone) setErrors((prev) => ({ ...prev, phone: '' }));
     if (errors.address && data.address) setErrors((prev) => ({ ...prev, address: '' }));
+  };
+
+  const handleMethodChange = (newMethod) => {
+    if (newMethod === method) return;
+
+    setMethod(newMethod);
+    setCopiedFromPrevious(false);
+
+    // Salin nama dan telepon kalau field barunya masih kosong
+    const shouldCopyName = !customerData.name || !customerData.name.trim();
+    const shouldCopyPhone = !customerData.phone || !customerData.phone.trim();
+
+    // Kalau field sudah terisi, tidak perlu salin. Tapi kalau kosong, isi dari data yang ada.
+    // Karena data tidak berasal dari metode lain secara terpisah, kita cek apakah ada isi.
+    // Kalau ada isi di customerData, kita biarkan. Kalau kosong, kita kosongkan saja.
+
+    // Reset address saat ganti ke pickup, karena alamat pengiriman tidak relevan.
+    // Saat ganti ke delivery, biarkan address apa adanya (mungkin sudah ada isinya dari metode sebelumnya atau kosong).
+    const newCustomerData = {
+      ...customerData,
+      address: newMethod === 'pickup' ? '' : customerData.address,
+    };
+
+    // Kalau metode baru adalah pickup, dan nama/phone sebelumnya terisi,
+    // kita anggap itu salinan dari delivery.
+    if (newMethod === 'pickup' && (customerData.name || customerData.phone)) {
+      setCopiedFromPrevious(true);
+    }
+
+    // Kalau metode baru adalah delivery dan customer sebelumnya pickup,
+    // alamat tetap kosong karena berbeda dari lokasi toko.
+    if (newMethod === 'delivery' && (customerData.name || customerData.phone)) {
+      setCopiedFromPrevious(true);
+    }
+
+    setCustomerData(newCustomerData);
+
+    // Hapus error lama karena konteks field berubah
+    setErrors({});
   };
 
   const validateForm = () => {
@@ -99,7 +141,7 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
             <button
               key={option.value}
               type="button"
-              onClick={() => setMethod(option.value)}
+              onClick={() => handleMethodChange(option.value)}
               className={`relative flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left ${
                 method === option.value
                   ? 'bg-gradient-to-r from-dustyRose/20 to-coral/10 border-dustyRose shadow-lg'
@@ -139,6 +181,15 @@ const CheckoutForm = ({ cartItems, total, onSuccess }) => {
             </button>
           ))}
         </div>
+
+        {copiedFromPrevious && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+            <FiInfo className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700">
+              Data nama dan telepon dari metode sebelumnya otomatis terisi. Silakan lanjutkan mengisi data yang diperlukan.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="glass rounded-2xl p-6">

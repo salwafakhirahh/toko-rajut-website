@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { getCart, createOrder, clearCart, supabase } from '../services/supabaseClient';
+import {
+  getCart,
+  createOrder,
+  clearCart,
+  supabase,
+  getAddresses,
+  addAddress,
+  getPickupContacts,
+  addPickupContact,
+} from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { calculateSubtotal, calculateFinalPrice } from '../utils/priceHelper';
 import CheckoutForm from '../components/checkout/CheckoutForm';
@@ -82,6 +91,54 @@ const CheckoutPage = () => {
     return true;
   };
 
+  // Otomatis simpan data yang diisi manual ke daftar tersimpan
+  const autoSaveCustomerData = async (data) => {
+    if (!user) return;
+
+    try {
+      if (data.method === 'delivery') {
+        const existing = await getAddresses(user.id);
+        const isDuplicate = existing.some(
+          (a) =>
+            a.address?.trim().toLowerCase() === data.address.trim().toLowerCase() &&
+            a.phone?.trim() === data.phone.trim()
+        );
+
+        if (!isDuplicate) {
+          await addAddress({
+            user_id: user.id,
+            label: existing.length === 0 ? 'Rumah' : `Alamat ${existing.length + 1}`,
+            recipient_name: data.name.trim(),
+            phone: data.phone.trim(),
+            address: data.address.trim(),
+            is_default: existing.length === 0,
+          });
+        }
+      } else if (data.method === 'pickup') {
+        const existing = await getPickupContacts(user.id);
+        const isDuplicate = existing.some(
+          (c) =>
+            c.name?.trim().toLowerCase() === data.name.trim().toLowerCase() &&
+            c.phone?.trim() === data.phone.trim()
+        );
+
+        if (!isDuplicate) {
+          await addPickupContact({
+            user_id: user.id,
+            label: existing.length === 0 ? 'Diri Sendiri' : `Kontak ${existing.length + 1}`,
+            name: data.name.trim(),
+            phone: data.phone.trim(),
+            notes: data.message || '',
+            is_default: existing.length === 0,
+          });
+        }
+      }
+    } catch (saveError) {
+      // Jangan gagalkan checkout kalau auto-save bermasalah
+      console.warn('Auto-save data customer gagal:', saveError);
+    }
+  };
+
   const handleCheckout = async (data) => {
     if (!validateForm(data)) return;
 
@@ -129,11 +186,14 @@ const CheckoutPage = () => {
 
       await clearCart(user.id);
 
+      // Otomatis simpan alamat atau kontak kalau belum tersimpan
+      await autoSaveCustomerData(data);
+
       const totalItem = cartItems.reduce((sum, item) => sum + item.quantity, 0);
       const methodLabel = data.method === 'pickup' ? 'Ambil di Toko' : 'Kirim ke Alamat';
 
       toast.success(
-        (t) => (
+        () => (
           <div className="text-sm">
             <p className="font-bold text-dustyRose mb-1">Pesanan Berhasil Dibuat!</p>
             <p className="mb-1">

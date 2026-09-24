@@ -384,3 +384,175 @@ export const getAdmins = async () => {
   if (error) throw error;
   return data;
 };
+
+// ADDRESS SERVICES (Alamat Pengiriman)
+export const getAddresses = async (userId) => {
+  const { data, error } = await supabase
+    .from('addresses')
+    .select('*')
+    .eq('user_id', userId)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+};
+
+export const addAddress = async (addressData) => {
+  // Kalau ini alamat pertama, jadikan default
+  const existing = await getAddresses(addressData.user_id);
+  const shouldBeDefault = addressData.is_default || existing.length === 0;
+
+  // Kalau alamat baru default, reset default yang lain
+  if (shouldBeDefault && existing.length > 0) {
+    await supabase
+      .from('addresses')
+      .update({ is_default: false })
+      .eq('user_id', addressData.user_id);
+  }
+
+  const { data, error } = await supabase
+    .from('addresses')
+    .insert([{
+      user_id: addressData.user_id,
+      label: addressData.label,
+      recipient_name: addressData.recipient_name,
+      phone: addressData.phone,
+      address: addressData.address,
+      is_default: shouldBeDefault,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const updateAddress = async (id, addressData) => {
+  const { data, error } = await supabase
+    .from('addresses')
+    .update({
+      label: addressData.label,
+      recipient_name: addressData.recipient_name,
+      phone: addressData.phone,
+      address: addressData.address,
+      is_default: addressData.is_default,
+      updated_at: new Date(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const deleteAddress = async (id) => {
+  const { error } = await supabase
+    .from('addresses')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+  return true;
+};
+
+export const setDefaultAddress = async (userId, addressId) => {
+  // Reset semua default milik user ini
+  await supabase
+    .from('addresses')
+    .update({ is_default: false })
+    .eq('user_id', userId);
+
+  // Set default untuk alamat yang dipilih
+  const { data, error } = await supabase
+    .from('addresses')
+    .update({ is_default: true })
+    .eq('id', addressId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// PICKUP CONTACT SERVICES (Kontak Pengambilan)
+export const getPickupContacts = async (userId) => {
+  const { data, error } = await supabase
+    .from('pickup_contacts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+};
+
+export const addPickupContact = async (contactData) => {
+  // Kalau ini kontak pertama, jadikan default
+  const existing = await getPickupContacts(contactData.user_id);
+  const shouldBeDefault = contactData.is_default || existing.length === 0;
+
+  // Kalau kontak baru default, reset default yang lain
+  if (shouldBeDefault && existing.length > 0) {
+    await supabase
+      .from('pickup_contacts')
+      .update({ is_default: false })
+      .eq('user_id', contactData.user_id);
+  }
+
+  const { data, error } = await supabase
+    .from('pickup_contacts')
+    .insert([{
+      user_id: contactData.user_id,
+      label: contactData.label,
+      name: contactData.name,
+      phone: contactData.phone,
+      notes: contactData.notes || '',
+      is_default: shouldBeDefault,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const updatePickupContact = async (id, contactData) => {
+  const { data, error } = await supabase
+    .from('pickup_contacts')
+    .update({
+      label: contactData.label,
+      name: contactData.name,
+      phone: contactData.phone,
+      notes: contactData.notes || '',
+      is_default: contactData.is_default,
+      updated_at: new Date(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const deletePickupContact = async (id) => {
+  const { error } = await supabase
+    .from('pickup_contacts')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+  return true;
+};
+
+export const setDefaultPickupContact = async (userId, contactId) => {
+  // Reset semua default milik user ini
+  await supabase
+    .from('pickup_contacts')
+    .update({ is_default: false })
+    .eq('user_id', userId);
+
+  // Set default untuk kontak yang dipilih
+  const { data, error } = await supabase
+    .from('pickup_contacts')
+    .update({ is_default: true })
+    .eq('id', contactId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
