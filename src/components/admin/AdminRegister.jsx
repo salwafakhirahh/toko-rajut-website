@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiUser, FiShield, FiUserPlus } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiShield, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { supabase } from '../../services/supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -15,6 +15,9 @@ const AdminRegister = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showAdminToken, setShowAdminToken] = useState(false);
   const navigate = useNavigate();
 
   const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || 'rahasia_admin_123';
@@ -160,15 +163,24 @@ const AdminRegister = () => {
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Minimal 6 karakter"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.password ? 'border-red-400' : 'border-white/40'
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+              </button>
             </div>
             {errors.password && (
               <p className="text-xs text-red-500 mt-1">{errors.password}</p>
@@ -182,15 +194,24 @@ const AdminRegister = () => {
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="Ulangi password"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.confirmPassword ? 'border-red-400' : 'border-white/40'
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showConfirmPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+              </button>
             </div>
             {errors.confirmPassword && (
               <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
@@ -204,22 +225,30 @@ const AdminRegister = () => {
             <div className="relative">
               <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showAdminToken ? 'text' : 'password'}
                 name="adminToken"
                 value={formData.adminToken}
                 onChange={handleChange}
                 placeholder="Masukkan token admin"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.adminToken ? 'border-red-400' : 'border-white/40'
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowAdminToken((prev) => !prev)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+                aria-label={showAdminToken ? 'Sembunyikan token' : 'Tampilkan token'}
+              >
+                {showAdminToken ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+              </button>
             </div>
             {errors.adminToken && (
               <p className="text-xs text-red-500 mt-1">{errors.adminToken}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Hanya yang tahu token yang bisa daftar admin
-            </p>
+              Hanya yang tahu token yang bisa daftar admin            </p>
           </div>
 
           <button

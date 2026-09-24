@@ -20,6 +20,9 @@ import LoadingSpinner from '../common/LoadingSpinner';
 
 const COLORS = ['#C97B84', '#E8A0A8', '#FBAF46', '#F79480', '#9C6B94', '#6BA3BE'];
 
+// Batas stok rendah. Ubah angka ini kalau perlu.
+const LOW_STOCK_THRESHOLD = 5;
+
 const Dashboard = () => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -75,8 +78,10 @@ const Dashboard = () => {
       .filter((o) => o.status === 'delivered')
       .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const pendingOrders = orders.filter((o) => o.status === 'pending').length;
+
     const lowStockProducts = products.filter(
-      (p) => (p.stock || 0) <= 5 && (p.stock || 0) > 0
+      (p) =>
+        (p.stock || 0) > 0 && (p.stock || 0) <= LOW_STOCK_THRESHOLD
     );
     const outOfStockProducts = products.filter((p) => (p.stock || 0) === 0);
 
@@ -138,7 +143,6 @@ const Dashboard = () => {
 
   return (
     <AdminLayout>
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -268,6 +272,9 @@ const Dashboard = () => {
               <FiAlertTriangle className="text-amber-500" />
               Produk Stok Rendah
             </h2>
+            <p className="text-xs text-gray-500 mb-3">
+              Produk dengan stok {LOW_STOCK_THRESHOLD} ke bawah atau habis
+            </p>
             {stats.lowStockProducts.length === 0 && stats.outOfStockProducts.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-6">
                 Semua produk stoknya aman
@@ -294,9 +301,9 @@ const Dashboard = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+                        className={`inline-block px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
                           p.stock === 0
                             ? 'bg-red-100 text-red-700'
                             : 'bg-amber-100 text-amber-700'
@@ -545,7 +552,7 @@ const Dashboard = () => {
                           className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                             (p.stock || 0) === 0
                               ? 'bg-red-100 text-red-700'
-                              : (p.stock || 0) <= 5
+                              : (p.stock || 0) <= LOW_STOCK_THRESHOLD
                               ? 'bg-amber-100 text-amber-700'
                               : 'bg-green-100 text-green-700'
                           }`}

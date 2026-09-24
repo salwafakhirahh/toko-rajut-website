@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiLock, FiMail, FiShield, FiUserPlus } from 'react-icons/fi';
+import { FiLock, FiMail, FiShield, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { supabase } from '../../services/supabaseClient';
 import { loginWithToken } from '../../services/authService';
@@ -10,6 +10,8 @@ const AdminLogin = () => {
   const [formData, setFormData] = useState({ email: '', password: '', token: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -115,15 +117,24 @@ const AdminLogin = () => {
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.password ? 'border-red-400' : 'border-white/40'
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+              </button>
             </div>
             {errors.password && (
               <p className="text-xs text-red-500 mt-1">{errors.password}</p>
@@ -137,19 +148,37 @@ const AdminLogin = () => {
             <div className="relative">
               <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showToken ? 'text' : 'password'}
                 name="token"
                 value={formData.token}
                 onChange={handleChange}
                 placeholder="Masukkan token admin"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
                   errors.token ? 'border-red-400' : 'border-white/40'
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowToken((prev) => !prev)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+                aria-label={showToken ? 'Sembunyikan token' : 'Tampilkan token'}
+              >
+                {showToken ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+              </button>
             </div>
             {errors.token && (
               <p className="text-xs text-red-500 mt-1">{errors.token}</p>
             )}
+          </div>
+
+          <div className="flex justify-end">
+            <Link
+              to="/toko/forgot-password"
+              className="text-sm text-dustyRose hover:text-coral font-medium"
+            >
+              Lupa password?
+            </Link>
           </div>
 
           <button
