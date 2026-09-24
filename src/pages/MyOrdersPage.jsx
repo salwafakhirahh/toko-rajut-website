@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiPackage, FiClock, FiCheckCircle, FiTruck,
-  FiXCircle, FiChevronRight, FiLock, FiShoppingBag
+  FiXCircle, FiChevronRight, FiLock, FiShoppingBag,
+  FiHome, FiMapPin
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getOrdersByUser } from '../services/supabaseClient';
@@ -35,8 +36,9 @@ const MyOrdersPage = () => {
     }
   };
 
-  const getStatusInfo = (status) => {
-    const statusMap = {
+  // Status berbeda tergantung metode pengiriman
+  const getStatusInfo = (status, deliveryMethod) => {
+    const baseMap = {
       pending: {
         label: 'Menunggu Pembayaran',
         color: 'bg-yellow-100 text-yellow-700',
@@ -46,11 +48,6 @@ const MyOrdersPage = () => {
         label: 'Dibayar',
         color: 'bg-blue-100 text-blue-700',
         icon: <FiCheckCircle className="w-4 h-4" />,
-      },
-      shipped: {
-        label: 'Dikirim',
-        color: 'bg-purple-100 text-purple-700',
-        icon: <FiTruck className="w-4 h-4" />,
       },
       delivered: {
         label: 'Selesai',
@@ -63,7 +60,54 @@ const MyOrdersPage = () => {
         icon: <FiXCircle className="w-4 h-4" />,
       },
     };
-    return statusMap[status] || statusMap.pending;
+
+    // Shipped hanya ada di delivery
+    if (status === 'shipped' && deliveryMethod === 'delivery') {
+      return {
+        label: 'Sedang Dikirim',
+        color: 'bg-purple-100 text-purple-700',
+        icon: <FiTruck className="w-4 h-4" />,
+      };
+    }
+
+    return baseMap[status] || baseMap.pending;
+  };
+
+  // Pesan status khusus yang muncul di kartu pesanan
+  const getStatusMessage = (order) => {
+    const isPickup = order.delivery_method === 'pickup';
+
+    if (order.status === 'paid' && isPickup) {
+      return {
+        text: 'Silakan ambil pesanan Anda di Toko Urban Knitters',
+        color: 'text-amber-600',
+      };
+    }
+    if (order.status === 'paid' && !isPickup) {
+      return {
+        text: 'Pesanan akan segera dikirim ke alamat Anda',
+        color: 'text-blue-600',
+      };
+    }
+    if (order.status === 'shipped' && !isPickup) {
+      return {
+        text: 'Pesanan sedang dalam perjalanan ke alamat Anda',
+        color: 'text-purple-600',
+      };
+    }
+    if (order.status === 'delivered' && isPickup) {
+      return {
+        text: 'Pesanan telah diambil. Terima kasih!',
+        color: 'text-green-600',
+      };
+    }
+    if (order.status === 'delivered' && !isPickup) {
+      return {
+        text: 'Pesanan telah diterima. Terima kasih!',
+        color: 'text-green-600',
+      };
+    }
+    return null;
   };
 
   const filterOptions = [
@@ -104,7 +148,7 @@ const MyOrdersPage = () => {
   if (loading) return <LoadingSpinner message="Memuat pesanan..." />;
 
   return (
-    <div className="pt-6 px-4">
+    <div className="pt-6 px-4 pb-12">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <FiPackage className="w-8 h-8 text-dustyRose" />
@@ -143,7 +187,10 @@ const MyOrdersPage = () => {
         ) : (
           <div className="space-y-4">
             {filteredOrders.map((order) => {
-              const statusInfo = getStatusInfo(order.status);
+              const statusInfo = getStatusInfo(order.status, order.delivery_method);
+              const statusMessage = getStatusMessage(order);
+              const isPickup = order.delivery_method === 'pickup';
+
               return (
                 <div
                   key={order.id}
@@ -169,10 +216,33 @@ const MyOrdersPage = () => {
                     </span>
                   </div>
 
+                  <div className="flex items-center gap-2 mb-3">
+                    {isPickup ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                        <FiHome className="w-3 h-3" />
+                        Ambil di Toko
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                        <FiTruck className="w-3 h-3" />
+                        Kirim ke Alamat
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex justify-between items-center mb-3">
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">Metode:</span>{' '}
-                      <span className="capitalize">{order.delivery_method}</span>
+                    <div className="text-sm text-gray-600 flex items-start gap-1 max-w-[60%]">
+                      {isPickup ? (
+                        <>
+                          <FiMapPin className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span>Ambil di Toko Urban Knitters</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiMapPin className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{order.delivery_address || 'Alamat tidak tersedia'}</span>
+                        </>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500">Total</p>
@@ -182,12 +252,16 @@ const MyOrdersPage = () => {
                     </div>
                   </div>
 
+                  {statusMessage && (
+                    <div className={`text-xs mb-3 p-2 rounded-lg ${isPickup ? 'bg-amber-50' : 'bg-blue-50'}`}>
+                      <span className={statusMessage.color}>{statusMessage.text}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pt-3 border-t border-white/40">
-                    <p className="text-xs text-gray-500">
-                      {order.delivery_method === 'pickup'
-                        ? 'Ambil di Toko'
-                        : `Kirim ke: ${order.delivery_address?.substring(0, 30)}...`}
-                    </p>
+                    <span className="text-xs text-gray-500">
+                      {isPickup ? 'Ambil Sendiri' : 'Dikirim ke Alamat'}
+                    </span>
                     <span className="text-dustyRose text-sm font-semibold flex items-center gap-1">
                       Lihat Detail <FiChevronRight />
                     </span>

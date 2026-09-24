@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft, FiClock, FiCheckCircle, FiTruck,
   FiXCircle, FiPackage, FiMapPin, FiPhone, FiUser,
-  FiCreditCard, FiStar
+  FiCreditCard, FiStar, FiHome, FiInfo
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { getOrderItems, getOrdersByUser, checkUserReview } from '../services/supabaseClient';
+import {
+  getOrderItems, getOrdersByUser, checkUserReview
+} from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import ReviewModal from '../components/customer/ReviewModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -54,27 +56,90 @@ const OrderDetailPage = () => {
     }
   };
 
-  const timelineSteps = [
-    { key: 'pending', label: 'Pesanan Dibuat', icon: <FiClock /> },
-    { key: 'paid', label: 'Pembayaran Dikonfirmasi', icon: <FiCreditCard /> },
-    { key: 'shipped', label: 'Pesanan Dikirim', icon: <FiTruck /> },
-    { key: 'delivered', label: 'Pesanan Diterima', icon: <FiCheckCircle /> },
-  ];
+  // Timeline berbeda per metode pengiriman
+  const getTimelineSteps = (deliveryMethod) => {
+    if (deliveryMethod === 'pickup') {
+      return [
+        { key: 'pending', label: 'Pesanan Dibuat', icon: <FiClock /> },
+        { key: 'paid', label: 'Pembayaran Dikonfirmasi', icon: <FiCreditCard /> },
+        { key: 'delivered', label: 'Pesanan Diambil', icon: <FiCheckCircle /> },
+      ];
+    }
+    return [
+      { key: 'pending', label: 'Pesanan Dibuat', icon: <FiClock /> },
+      { key: 'paid', label: 'Pembayaran Dikonfirmasi', icon: <FiCreditCard /> },
+      { key: 'shipped', label: 'Pesanan Dikirim', icon: <FiTruck /> },
+      { key: 'delivered', label: 'Pesanan Diterima', icon: <FiCheckCircle /> },
+    ];
+  };
 
-  const getStepIndex = (status) => {
+  const getStepIndex = (status, deliveryMethod) => {
+    if (deliveryMethod === 'pickup') {
+      const map = { pending: 0, paid: 1, delivered: 2 };
+      return map[status] ?? -1;
+    }
     const map = { pending: 0, paid: 1, shipped: 2, delivered: 3 };
     return map[status] ?? -1;
+  };
+
+  const getStatusMessage = (order) => {
+    const isPickup = order.delivery_method === 'pickup';
+
+    if (order.status === 'paid' && isPickup) {
+      return {
+        text: 'Pembayaran sudah dikonfirmasi. Silakan ambil pesanan Anda di toko.',
+        bg: 'bg-amber-50 border-amber-200',
+        color: 'text-amber-700',
+        icon: <FiHome className="w-5 h-5 text-amber-500" />,
+      };
+    }
+    if (order.status === 'paid' && !isPickup) {
+      return {
+        text: 'Pembayaran sudah dikonfirmasi. Pesanan akan segera dikirim ke alamat Anda.',
+        bg: 'bg-blue-50 border-blue-200',
+        color: 'text-blue-700',
+        icon: <FiTruck className="w-5 h-5 text-blue-500" />,
+      };
+    }
+    if (order.status === 'shipped') {
+      return {
+        text: 'Pesanan sedang dalam perjalanan. Kurir akan menghubungi nomor telepon Anda.',
+        bg: 'bg-purple-50 border-purple-200',
+        color: 'text-purple-700',
+        icon: <FiTruck className="w-5 h-5 text-purple-500" />,
+      };
+    }
+    if (order.status === 'delivered' && isPickup) {
+      return {
+        text: 'Pesanan telah diambil. Terima kasih telah berbelanja!',
+        bg: 'bg-green-50 border-green-200',
+        color: 'text-green-700',
+        icon: <FiCheckCircle className="w-5 h-5 text-green-500" />,
+      };
+    }
+    if (order.status === 'delivered' && !isPickup) {
+      return {
+        text: 'Pesanan telah diterima. Terima kasih telah berbelanja!',
+        bg: 'bg-green-50 border-green-200',
+        color: 'text-green-700',
+        icon: <FiCheckCircle className="w-5 h-5 text-green-500" />,
+      };
+    }
+    return null;
   };
 
   if (loading) return <LoadingSpinner message="Memuat detail pesanan..." />;
   if (!order) return null;
 
-  const currentStep = getStepIndex(order.status);
+  const isPickup = order.delivery_method === 'pickup';
+  const timelineSteps = getTimelineSteps(order.delivery_method);
+  const currentStep = getStepIndex(order.status, order.delivery_method);
   const isCancelled = order.status === 'cancelled';
   const isDelivered = order.status === 'delivered';
+  const statusMessage = getStatusMessage(order);
 
   return (
-    <div className="pt-6 px-4">
+    <div className="pt-6 px-4 pb-12">
       <div className="max-w-3xl mx-auto">
         <button
           onClick={() => navigate('/toko/orders')}
@@ -102,13 +167,43 @@ const OrderDetailPage = () => {
                 <FiXCircle className="w-4 h-4" />
                 Dibatalkan
               </span>
-            ) : (
+            ) : isDelivered ? (
               <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                 <FiCheckCircle className="w-4 h-4" />
-                Aktif
+                Selesai
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                <FiClock className="w-4 h-4" />
+                Berlangsung
               </span>
             )}
           </div>
+
+          <div className="mb-4">
+            {isPickup ? (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
+                <FiHome className="w-4 h-4" />
+                Ambil di Toko
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                <FiTruck className="w-4 h-4" />
+                Kirim ke Alamat
+              </span>
+            )}
+          </div>
+
+          {statusMessage && !isCancelled && (
+            <div className={`p-4 rounded-xl border ${statusMessage.bg} mb-4`}>
+              <div className="flex items-start gap-3">
+                {statusMessage.icon}
+                <p className={`text-sm ${statusMessage.color}`}>
+                  {statusMessage.text}
+                </p>
+              </div>
+            </div>
+          )}
 
           {!isCancelled && (
             <div className="mt-6">
@@ -143,6 +238,69 @@ const OrderDetailPage = () => {
             </div>
           )}
         </div>
+
+        {/* Kotak info khusus per metode */}
+        {isPickup ? (
+          <div className="glass rounded-2xl p-6 mb-6 border-l-4 border-amber-400">
+            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <FiHome className="text-amber-500" />
+              Informasi Pengambilan
+            </h3>
+            <div className="space-y-2 text-sm text-gray-700">
+              <p>
+                <span className="text-gray-500">Lokasi:</span>{' '}
+                <span className="font-medium">{order.pickup_location || 'Toko Urban Knitters'}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Alamat:</span>{' '}
+                Jl Rajut Indah No. 123, Jakarta
+              </p>
+              <p>
+                <span className="text-gray-500">Jam Operasional:</span>{' '}
+                08.00 - 20.00 WIB
+              </p>
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                <FiInfo className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700">
+                  Silakan tunjukkan nomor pesanan <strong>{order.order_number}</strong> ke petugas toko saat mengambil pesanan.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="glass rounded-2xl p-6 mb-6 border-l-4 border-blue-400">
+            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <FiTruck className="text-blue-500" />
+              Informasi Pengiriman
+            </h3>
+            <div className="space-y-2 text-sm text-gray-700">
+              <p>
+                <span className="text-gray-500">Penerima:</span>{' '}
+                <span className="font-medium">{order.customer_name}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Telepon:</span>{' '}
+                {order.customer_phone}
+              </p>
+              <p>
+                <span className="text-gray-500">Alamat Pengiriman:</span>
+              </p>
+              <p className="font-medium text-gray-800 pl-2">
+                {order.delivery_address || 'Alamat tidak tersedia'}
+              </p>
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                <FiInfo className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700">
+                  {order.status === 'shipped'
+                    ? 'Kurir akan menghubungi nomor telepon Anda saat paket tiba di lokasi.'
+                    : order.status === 'delivered'
+                    ? 'Pesanan sudah diterima. Terima kasih telah berbelanja!'
+                    : 'Pesanan akan segera dikirim setelah pembayaran dikonfirmasi.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="glass rounded-2xl p-6 mb-6">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -193,7 +351,7 @@ const OrderDetailPage = () => {
         </div>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">Informasi Pengiriman</h3>
+          <h3 className="font-semibold text-gray-800 mb-4">Informasi Pemesan</h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
               <FiUser className="w-5 h-5 text-dustyRose mt-0.5" />
@@ -210,18 +368,15 @@ const OrderDetailPage = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <FiMapPin className="w-5 h-5 text-dustyRose mt-0.5" />
+              <FiCreditCard className="w-5 h-5 text-dustyRose mt-0.5" />
               <div>
-                <p className="text-gray-500">Metode</p>
-                <p className="font-medium text-gray-800 capitalize">
-                  {order.delivery_method === 'pickup' ? 'Ambil di Toko' : 'Kirim ke Alamat'}
+                <p className="text-gray-500">Metode Pembayaran</p>
+                <p className="font-medium text-gray-800">
+                  {order.payment_method === 'cod' ? 'Cash on Delivery (COD)' :
+                   order.payment_method === 'transfer' ? 'Transfer Bank' :
+                   order.payment_method === 'ewallet' ? 'E-Wallet' :
+                   order.payment_method || '-'}
                 </p>
-                {order.delivery_method === 'delivery' && order.delivery_address && (
-                  <p className="text-gray-600 mt-1">{order.delivery_address}</p>
-                )}
-                {order.delivery_method === 'pickup' && order.pickup_location && (
-                  <p className="text-gray-600 mt-1">{order.pickup_location}</p>
-                )}
               </div>
             </div>
             {order.customer_message && (
