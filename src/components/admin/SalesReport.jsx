@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   FiSearch, FiDownload, FiFileText, FiPrinter,
   FiDollarSign, FiShoppingBag, FiTrendingUp, FiFilter, FiEye,
+  FiAlertCircle
 } from 'react-icons/fi';
 import AdminLayout from './AdminLayout';
-import { getAllSalesItems, getAllOrdersWithItems } from '../../services/reportService';
+import { getAllSalesItems } from '../../services/reportService';
 import LoadingSpinner from '../common/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -19,6 +20,7 @@ const SalesReport = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [productStatusFilter, setProductStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchData();
@@ -49,16 +51,6 @@ const SalesReport = () => {
 
   const formatPrice = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
   const formatDate = (s) => (s ? new Date(s).toLocaleDateString('id-ID') : '-');
-  const formatDateTime = (s) =>
-    s
-      ? new Date(s).toLocaleString('id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : '-';
 
   const getPeriodRange = () => {
     const now = new Date();
@@ -116,6 +108,15 @@ const SalesReport = () => {
       );
     }
 
+    if (productStatusFilter !== 'all') {
+      list = list.filter((it) => {
+        const isActive = it.products?.is_active;
+        if (productStatusFilter === 'active') return isActive === true;
+        if (productStatusFilter === 'inactive') return isActive === false;
+        return true;
+      });
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -127,11 +128,12 @@ const SalesReport = () => {
     }
 
     return list;
-  }, [items, period, dateFrom, dateTo, categoryFilter, search]);
+  }, [items, period, dateFrom, dateTo, categoryFilter, productStatusFilter, search]);
 
   const totalRevenue = filtered.reduce((sum, it) => sum + Number(it.subtotal || 0), 0);
   const totalItems = filtered.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
   const uniqueOrders = new Set(filtered.map((it) => it.orders?.order_number)).size;
+  const inactiveCount = filtered.filter((it) => it.products?.is_active === false).length;
 
   const resetFilters = () => {
     setSearch('');
@@ -139,14 +141,16 @@ const SalesReport = () => {
     setDateFrom('');
     setDateTo('');
     setCategoryFilter('all');
+    setProductStatusFilter('all');
   };
 
   const exportCSV = () => {
-    const headers = ['No Pesanan', 'Pelanggan', 'Produk', 'Qty', 'Harga', 'Subtotal', 'Tanggal'];
+    const headers = ['No Pesanan', 'Pelanggan', 'Produk', 'Status Produk', 'Qty', 'Harga', 'Subtotal', 'Tanggal'];
     const rows = filtered.map((it) => [
       it.orders?.order_number || '',
       it.orders?.customer_name || '',
       it.product_name || '',
+      it.products?.is_active === false ? 'Nonaktif' : 'Aktif',
       it.quantity,
       it.price,
       it.subtotal,
@@ -177,6 +181,7 @@ const SalesReport = () => {
         table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
         th { background: #f4d9d0; }
+        .badge-inactive { color: #b45309; font-size: 11px; }
         .total { margin-top: 16px; font-weight: bold; }
       </style></head><body>
       <h1>Laporan Penjualan</h1>
@@ -193,7 +198,7 @@ const SalesReport = () => {
       </div>
       <table>
         <thead><tr>
-          <th>No Pesanan</th><th>Pelanggan</th><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th><th>Tanggal</th>
+          <th>No Pesanan</th><th>Pelanggan</th><th>Produk</th><th>Status</th><th>Qty</th><th>Harga</th><th>Subtotal</th><th>Tanggal</th>
         </tr></thead>
         <tbody>
           ${filtered.map((it) => `
@@ -201,6 +206,7 @@ const SalesReport = () => {
               <td>${it.orders?.order_number || ''}</td>
               <td>${it.orders?.customer_name || ''}</td>
               <td>${it.product_name || ''}</td>
+              <td>${it.products?.is_active === false ? '<span class="badge-inactive">Nonaktif</span>' : 'Aktif'}</td>
               <td>${it.quantity}</td>
               <td>${formatPrice(it.price)}</td>
               <td>${formatPrice(it.subtotal)}</td>
@@ -265,6 +271,15 @@ const SalesReport = () => {
         </div>
       </div>
 
+      {inactiveCount > 0 && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+          <FiAlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">
+            Ada <strong>{inactiveCount}</strong> transaksi dengan produk yang sudah <strong>dinonaktifkan</strong>. Data tetap dihitung karena merupakan catatan historis.
+          </p>
+        </div>
+      )}
+
       <div className="admin-card mb-6">
         <div className="flex items-center gap-2 mb-4">
           <FiFilter className="text-dustyRose" />
@@ -293,7 +308,7 @@ const SalesReport = () => {
           ))}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1">
               Dari Tanggal
@@ -331,6 +346,20 @@ const SalesReport = () => {
                   {cat.name}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
+              Status Produk
+            </label>
+            <select
+              value={productStatusFilter}
+              onChange={(e) => setProductStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 bg-white/50 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose text-sm"
+            >
+              <option value="all">Semua Produk</option>
+              <option value="active">Hanya Aktif</option>
+              <option value="inactive">Hanya Nonaktif</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -398,6 +427,7 @@ const SalesReport = () => {
                 <th>No Pesanan</th>
                 <th>Pelanggan</th>
                 <th>Produk</th>
+                <th className="text-center">Status</th>
                 <th>Qty</th>
                 <th>Harga</th>
                 <th>Subtotal</th>
@@ -408,33 +438,47 @@ const SalesReport = () => {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-8 text-gray-500">
+                  <td colSpan="10" className="text-center py-8 text-gray-500">
                     Belum ada penjualan pada periode ini
                   </td>
                 </tr>
               ) : (
-                filtered.map((it, index) => (
-                  <tr key={it.id}>
-                    <td className="text-center font-medium">{index + 1}</td>
-                    <td className="font-mono text-xs">{it.orders?.order_number || '-'}</td>
-                    <td>{it.orders?.customer_name || '-'}</td>
-                    <td className="font-medium">{it.product_name}</td>
-                    <td>{it.quantity}</td>
-                    <td>{formatPrice(it.price)}</td>
-                    <td className="font-semibold text-dustyRose">{formatPrice(it.subtotal)}</td>
-                    <td className="text-xs">{formatDate(it.orders?.created_at || it.created_at)}</td>
-                    <td className="text-center">
-                      <Link
-                        to={`/toko/admin/orders/detail/${it.order_id}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-xs font-semibold"
-                        title="Lihat detail transaksi"
-                      >
-                        <FiEye className="w-3.5 h-3.5" />
-                        Detail
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                filtered.map((it, index) => {
+                  const isInactive = it.products?.is_active === false;
+                  return (
+                    <tr key={it.id} className={isInactive ? 'bg-amber-50/30' : ''}>
+                      <td className="text-center font-medium">{index + 1}</td>
+                      <td className="font-mono text-xs">{it.orders?.order_number || '-'}</td>
+                      <td>{it.orders?.customer_name || '-'}</td>
+                      <td className="font-medium">{it.product_name}</td>
+                      <td className="text-center">
+                        {isInactive ? (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 whitespace-nowrap">
+                            Nonaktif
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap">
+                            Aktif
+                          </span>
+                        )}
+                      </td>
+                      <td>{it.quantity}</td>
+                      <td>{formatPrice(it.price)}</td>
+                      <td className="font-semibold text-dustyRose">{formatPrice(it.subtotal)}</td>
+                      <td className="text-xs">{formatDate(it.orders?.created_at || it.created_at)}</td>
+                      <td className="text-center">
+                        <Link
+                          to={`/toko/admin/orders/detail/${it.order_id}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-xs font-semibold"
+                          title="Lihat detail transaksi"
+                        >
+                          <FiEye className="w-3.5 h-3.5" />
+                          Detail
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

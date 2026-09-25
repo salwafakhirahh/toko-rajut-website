@@ -32,7 +32,7 @@ export const getTopProducts = async () => {
   return data;
 };
 
-// Ambil semua order_items dengan relasi order dan kategori produk
+// Ambil semua order_items dengan relasi order, kategori, dan status aktif produk
 export const getAllSalesItems = async () => {
   const { data, error } = await supabase
     .from('order_items')
@@ -46,7 +46,7 @@ export const getAllSalesItems = async () => {
       subtotal,
       created_at,
       orders(order_number, status, created_at, customer_name, customer_phone, payment_method, delivery_method, delivery_address),
-      products(category_id, categories(id, name, slug))
+      products(category_id, is_active, categories(id, name, slug))
     `)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -64,7 +64,7 @@ export const getOrderDetailById = async (orderId) => {
 
   const { data: items, error: itemsError } = await supabase
     .from('order_items')
-    .select('*, products(name, image_url)')
+    .select('*, products(name, image_url, is_active)')
     .eq('order_id', orderId);
   if (itemsError) throw itemsError;
 
