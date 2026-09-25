@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit, FiTrash2, FiSearch, FiFolder } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSearch, FiFolder, FiAlertTriangle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import ConfirmModal from '../common/ConfirmModal';
-import { getCategories, addCategory, updateCategory, deleteCategory } from '../../services/supabaseClient';
+import {
+  getCategories,
+  addCategory,
+  updateCategory,
+  deleteCategory,
+  countProductsByCategory,
+} from '../../services/supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const CategoryManagement = () => {
@@ -14,7 +20,9 @@ const CategoryManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
+  const [deleteName, setDeleteName] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [checkingDelete, setCheckingDelete] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -75,9 +83,32 @@ const CategoryManagement = () => {
     setErrors({});
   };
 
-  const handleDeleteClick = (id) => {
-    setDeleteId(id);
-    setShowModal(true);
+  const handleDeleteClick = async (category) => {
+    setCheckingDelete(true);
+    const loadingToast = toast.loading('Memeriksa kategori...');
+
+    try {
+      const count = await countProductsByCategory(category.id);
+      toast.dismiss(loadingToast);
+
+      if (count > 0) {
+        toast.error(
+          `Kategori "${category.name}" tidak dapat dihapus karena masih digunakan oleh ${count} produk. Pindahkan produk tersebut ke kategori lain terlebih dahulu.`,
+          { duration: 6000 }
+        );
+        setCheckingDelete(false);
+        return;
+      }
+
+      setDeleteId(category.id);
+      setDeleteName(category.name);
+      setShowModal(true);
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal memeriksa kategori: ' + error.message, { id: loadingToast });
+    } finally {
+      setCheckingDelete(false);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -91,12 +122,14 @@ const CategoryManagement = () => {
       toast.error('Gagal menghapus: ' + error.message, { id: loadingToast });
     } finally {
       setDeleteId(null);
+      setDeleteName('');
     }
   };
 
   const handleCancelDelete = () => {
     setShowModal(false);
     setDeleteId(null);
+    setDeleteName('');
   };
 
   const filtered = categories.filter((cat) =>
@@ -146,6 +179,14 @@ const CategoryManagement = () => {
             className="w-full pl-12 pr-4 py-3 rounded-full bg-white/60 backdrop-blur border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
           />
         </div>
+      </div>
+
+      {/* Info */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+        <FiAlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-blue-700">
+          Kategori yang masih memiliki produk tidak dapat dihapus. Pindahkan produk ke kategori lain terlebih dahulu sebelum menghapus kategori.
+        </p>
       </div>
 
       {showForm && (
@@ -234,8 +275,9 @@ const CategoryManagement = () => {
                           <FiEdit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(cat.id)}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                          onClick={() => handleDeleteClick(cat)}
+                          disabled={checkingDelete}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Hapus"
                         >
                           <FiTrash2 className="w-4 h-4" />
@@ -253,9 +295,12 @@ const CategoryManagement = () => {
       <ConfirmModal
         isOpen={showModal}
         title="Hapus Kategori"
-        message="Yakin ingin menghapus kategori ini? Produk dengan kategori ini akan menjadi tanpa kategori."
+        message={`Yakin ingin menghapus kategori "${deleteName}"? Tindakan ini tidak dapat dibatalkan.`}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        confirmColor="red"
       />
     </AdminLayout>
   );

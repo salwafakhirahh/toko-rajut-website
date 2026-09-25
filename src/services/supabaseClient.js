@@ -177,6 +177,17 @@ export const deleteCategory = async (id) => {
   return true;
 };
 
+// Hitung jumlah produk dalam kategori tertentu
+export const countProductsByCategory = async (categoryId) => {
+  const { count, error } = await supabase
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('category_id', categoryId);
+
+  if (error) throw error;
+  return count || 0;
+};
+
 export const getCart = async (userId) => {
   const { data, error } = await supabase
     .from('cart')
