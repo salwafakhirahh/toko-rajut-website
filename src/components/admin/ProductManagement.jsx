@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  FiPlus, FiEdit, FiSearch, FiEye, FiEyeOff, FiStar, FiPackage
+  FiPlus, FiEdit, FiSearch, FiEye, FiEyeOff, FiPackage
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
@@ -185,11 +185,18 @@ const ProductManagement = () => {
                       </td>
 
                       <td className="px-2 py-2">
-                        <img
-                          src={product.image_url || `https://picsum.photos/50/50?random=${product.id}`}
-                          alt={product.name}
-                          className="w-10 h-10 object-cover rounded-lg shadow-sm"
-                        />
+                        <div className="relative inline-block">
+                          <img
+                            src={product.image_url || `https://picsum.photos/50/50?random=${product.id}`}
+                            alt={product.name}
+                            className="w-10 h-10 object-cover rounded-lg shadow-sm"
+                          />
+                          {hasDiscount && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
+                              -{product.discount}%
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="px-2 py-2">
