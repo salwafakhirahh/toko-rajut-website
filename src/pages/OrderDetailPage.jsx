@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft, FiClock, FiCheckCircle, FiTruck,
   FiXCircle, FiPackage, FiMapPin, FiPhone, FiUser,
-  FiCreditCard, FiStar, FiHome, FiInfo
+  FiCreditCard, FiStar, FiHome, FiInfo, FiPrinter, FiX
 } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   getOrderItems, getOrdersByUser, checkUserReview
@@ -12,6 +13,23 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import ReviewModal from '../components/customer/ReviewModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+
+const paymentLabel = (method) => {
+  switch (method) {
+    case 'cod': return 'Tunai / Cash on Delivery (COD)';
+    case 'transfer': return 'Transfer Bank';
+    case 'ewallet': return 'E-Wallet';
+    default: return method || '-';
+  }
+};
+
+const deliveryLabel = (method) => {
+  switch (method) {
+    case 'pickup': return 'Ambil di Toko';
+    case 'delivery': return 'Kirim ke Alamat';
+    default: return method || '-';
+  }
+};
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -22,6 +40,7 @@ const OrderDetailPage = () => {
   const [reviewedItems, setReviewedItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [reviewModal, setReviewModal] = useState({ open: false, product: null });
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     if (user) fetchOrderDetail();
@@ -54,6 +73,81 @@ const OrderDetailPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatPrice = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  const formatDate = (s) =>
+    s
+      ? new Date(s).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '-';
+
+  const handlePrintReceipt = () => {
+    if (!order || items.length === 0) {
+      toast.error('Data struk tidak tersedia');
+      return;
+    }
+
+    const rows = items.map((it) => `
+      <tr>
+        <td>${it.product_name}</td>
+        <td style="text-align:center">${it.quantity}</td>
+        <td style="text-align:right">${formatPrice(it.price)}</td>
+        <td style="text-align:right">${formatPrice(it.subtotal)}</td>
+      </tr>`).join('');
+
+    const html = `
+      <html>
+      <head>
+        <title>Struk ${order.order_number}</title>
+        <style>
+          body { font-family: 'Courier New', monospace; padding: 20px; max-width: 340px; margin: 0 auto; color: #333; }
+          h1 { font-size: 18px; text-align: center; margin: 0 0 4px 0; }
+          .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 12px; }
+          .divider { border-top: 1px dashed #999; margin: 8px 0; }
+          .row { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; }
+          .label { color: #666; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+          th, td { padding: 4px 0; text-align: left; }
+          th { border-bottom: 1px solid #999; font-size: 11px; }
+          .total { font-size: 14px; font-weight: bold; margin-top: 8px; display: flex; justify-content: space-between; }
+          .footer { text-align: center; font-size: 11px; color: #888; margin-top: 16px; }
+        </style></head>
+      <body>
+        <h1>Urban Knitters</h1>
+        <div class="subtitle">Toko Rajut Handmade</div>
+        <div class="divider"></div>
+        <div class="row"><span class="label">No Pesanan</span><span>${order.order_number}</span></div>
+        <div class="row"><span class="label">Tanggal</span><span>${formatDate(order.created_at)}</span></div>
+        <div class="row"><span class="label">Pelanggan</span><span>${order.customer_name || '-'}</span></div>
+        <div class="row"><span class="label">Telepon</span><span>${order.customer_phone || '-'}</span></div>
+        <div class="row"><span class="label">Pengiriman</span><span>${deliveryLabel(order.delivery_method)}</span></div>
+        <div class="row"><span class="label">Pembayaran</span><span>${paymentLabel(order.payment_method)}</span></div>
+        ${order.delivery_method === 'delivery' && order.delivery_address ? `<div class="row"><span class="label">Alamat</span><span style="text-align:right; max-width:180px">${order.delivery_address}</span></div>` : ''}
+        <div class="divider"></div>
+        <table>
+          <thead><tr>
+            <th>Produk</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Subtotal</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="divider"></div>
+        <div class="total"><span>TOTAL</span><span>${formatPrice(order.total_amount)}</span></div>
+        <div class="divider"></div>
+        <div class="footer">Terima kasih telah berbelanja!</div>
+      </body>
+      </html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 300);
   };
 
   // Timeline berbeda per metode pengiriman
@@ -153,13 +247,7 @@ const OrderDetailPage = () => {
             <div>
               <p className="text-xs text-gray-500 font-mono">{order.order_number}</p>
               <p className="text-sm text-gray-600 mt-1">
-                {new Date(order.created_at).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {formatDate(order.created_at)}
               </p>
             </div>
             {isCancelled ? (
@@ -180,7 +268,7 @@ const OrderDetailPage = () => {
             )}
           </div>
 
-          <div className="mb-4">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
             {isPickup ? (
               <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
                 <FiHome className="w-4 h-4" />
@@ -192,6 +280,15 @@ const OrderDetailPage = () => {
                 Kirim ke Alamat
               </span>
             )}
+
+            {/* Tombol Lihat Struk */}
+            <button
+              onClick={() => setShowReceipt(true)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-dustyRose text-white text-sm font-semibold hover:bg-coral transition-all"
+            >
+              <FiPrinter className="w-4 h-4" />
+              Lihat Struk
+            </button>
           </div>
 
           {statusMessage && !isCancelled && (
@@ -372,10 +469,7 @@ const OrderDetailPage = () => {
               <div>
                 <p className="text-gray-500">Metode Pembayaran</p>
                 <p className="font-medium text-gray-800">
-                  {order.payment_method === 'cod' ? 'Cash on Delivery (COD)' :
-                   order.payment_method === 'transfer' ? 'Transfer Bank' :
-                   order.payment_method === 'ewallet' ? 'E-Wallet' :
-                   order.payment_method || '-'}
+                  {paymentLabel(order.payment_method)}
                 </p>
               </div>
             </div>
@@ -396,6 +490,88 @@ const OrderDetailPage = () => {
         orderId={order.id}
         onSuccess={fetchOrderDetail}
       />
+
+      {/* Modal Struk */}
+      <AnimatePresence>
+        {showReceipt && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+              onClick={() => setShowReceipt(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="glass rounded-2xl p-6 shadow-2xl border border-white/50 relative">
+                <button
+                  onClick={() => setShowReceipt(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+
+                <h3 className="text-lg font-bold text-gray-800 mb-3 text-center">
+                  Struk Pesanan
+                </h3>
+
+                <div className="bg-white p-4 rounded-lg border border-dashed border-gray-300 text-xs font-mono mb-4 max-h-80 overflow-y-auto">
+                  <div className="text-center mb-2">
+                    <p className="font-bold">Urban Knitters</p>
+                    <p className="text-gray-500">Toko Rajut Handmade</p>
+                  </div>
+                  <div className="border-t border-dashed border-gray-300 my-2"></div>
+                  <div className="flex justify-between"><span>No</span><span>{order.order_number}</span></div>
+                  <div className="flex justify-between"><span>Tgl</span><span>{formatDate(order.created_at)}</span></div>
+                  <div className="flex justify-between"><span>Nama</span><span>{order.customer_name}</span></div>
+                  <div className="flex justify-between"><span>Telp</span><span>{order.customer_phone}</span></div>
+                  <div className="flex justify-between"><span>Kirim</span><span>{deliveryLabel(order.delivery_method)}</span></div>
+                  <div className="flex justify-between"><span>Bayar</span><span>{paymentLabel(order.payment_method)}</span></div>
+                  <div className="border-t border-dashed border-gray-300 my-2"></div>
+                  {items.map((it, i) => (
+                    <div key={i} className="mb-1">
+                      <p>{it.product_name}</p>
+                      <div className="flex justify-between text-gray-500">
+                        <span>{it.quantity} x {formatPrice(it.price)}</span>
+                        <span>{formatPrice(it.subtotal)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="border-t border-dashed border-gray-300 my-2"></div>
+                  <div className="flex justify-between font-bold">
+                    <span>TOTAL</span>
+                    <span>{formatPrice(order.total_amount)}</span>
+                  </div>
+                  <div className="text-center mt-3 text-gray-500">
+                    Terima kasih!
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrintReceipt}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-dustyRose text-white rounded-lg hover:bg-coral font-semibold"
+                  >
+                    <FiPrinter /> Cetak Struk
+                  </button>
+                  <button
+                    onClick={() => setShowReceipt(false)}
+                    className="px-4 py-2.5 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 font-semibold border border-white/40"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
