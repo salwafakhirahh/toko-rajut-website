@@ -118,8 +118,30 @@ export const activateProduct = async (id) => {
   return data;
 };
 
-// Hapus permanen, hanya untuk keperluan darurat
+// ✅ BARU: Cek apakah produk sudah pernah dipesan (untuk validasi hapus)
+export const checkProductOrders = async (productId) => {
+  const { count, error } = await supabase
+    .from('order_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', productId);
+
+  if (error) throw error;
+  return count || 0;
+};
+
+// Hapus permanen, hanya untuk keperluan darurat.
+// Akan gagal (throw error) jika produk sudah dipesan,
+// karena FK constraint ON DELETE RESTRICT di database.
 export const deleteProduct = async (id) => {
+  // Cek dulu di frontend untuk pesan error yang lebih ramah
+  const orderCount = await checkProductOrders(id);
+  if (orderCount > 0) {
+    throw new Error(
+      `Produk ini sudah pernah dipesan ${orderCount} kali dan tidak dapat dihapus permanen. Silakan nonaktifkan saja di halaman Edit Produk.`
+    );
+  }
+
+  // Jika aman, lakukan hapus
   const { error } = await supabase
     .from('products')
     .delete()
@@ -479,11 +501,9 @@ export const getAddresses = async (userId) => {
 };
 
 export const addAddress = async (addressData) => {
-  // Kalau ini alamat pertama, jadikan default
   const existing = await getAddresses(addressData.user_id);
   const shouldBeDefault = addressData.is_default || existing.length === 0;
 
-  // Kalau alamat baru default, reset default yang lain
   if (shouldBeDefault && existing.length > 0) {
     await supabase
       .from('addresses')
@@ -535,13 +555,11 @@ export const deleteAddress = async (id) => {
 };
 
 export const setDefaultAddress = async (userId, addressId) => {
-  // Reset semua default milik user ini
   await supabase
     .from('addresses')
     .update({ is_default: false })
     .eq('user_id', userId);
 
-  // Set default untuk alamat yang dipilih
   const { data, error } = await supabase
     .from('addresses')
     .update({ is_default: true })
@@ -565,11 +583,9 @@ export const getPickupContacts = async (userId) => {
 };
 
 export const addPickupContact = async (contactData) => {
-  // Kalau ini kontak pertama, jadikan default
   const existing = await getPickupContacts(contactData.user_id);
   const shouldBeDefault = contactData.is_default || existing.length === 0;
 
-  // Kalau kontak baru default, reset default yang lain
   if (shouldBeDefault && existing.length > 0) {
     await supabase
       .from('pickup_contacts')
@@ -621,13 +637,11 @@ export const deletePickupContact = async (id) => {
 };
 
 export const setDefaultPickupContact = async (userId, contactId) => {
-  // Reset semua default milik user ini
   await supabase
     .from('pickup_contacts')
     .update({ is_default: false })
     .eq('user_id', userId);
 
-  // Set default untuk kontak yang dipilih
   const { data, error } = await supabase
     .from('pickup_contacts')
     .update({ is_default: true })
@@ -647,7 +661,6 @@ export const getTopSellingProducts = async (limit = 10) => {
   if (error) throw error;
   if (!data || data.length === 0) return [];
 
-  // Kelompokkan berdasarkan product_id
   const map = new Map();
 
   data.forEach((item) => {
@@ -668,7 +681,6 @@ export const getTopSellingProducts = async (limit = 10) => {
     entry.total_revenue += Number(item.subtotal || 0);
   });
 
-  // Ubah ke array, urutkan berdasarkan quantity
   const sorted = Array.from(map.values()).sort(
     (a, b) => b.total_quantity - a.total_quantity
   );

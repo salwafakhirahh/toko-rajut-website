@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiArrowLeft, FiPlus, FiX, FiFolder, FiPercent, FiImage } from 'react-icons/fi';
+import {
+  FiSave, FiArrowLeft, FiPlus, FiX, FiFolder, FiPercent, FiImage,
+  FiEyeOff, FiEye
+} from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import CustomSelect from '../common/CustomSelect';
+import ConfirmModal from '../common/ConfirmModal';
 import {
   addProduct,
   updateProduct,
@@ -11,6 +15,8 @@ import {
   getCategories,
   addCategory,
   uploadProductImage,
+  deactivateProduct,
+  activateProduct,
 } from '../../services/supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -37,6 +43,9 @@ const ProductForm = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isActive, setIsActive] = useState(true);
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -59,6 +68,7 @@ const ProductForm = () => {
           discount: product.discount || 0,
         });
         setImagePreview(product.image_url || '');
+        setIsActive(product.is_active !== false);
       }
     } catch (error) {
       toast.error('Gagal memuat data');
@@ -206,6 +216,30 @@ const ProductForm = () => {
     }
   };
 
+  const handleToggleStatus = async () => {
+    setToggling(true);
+    const loadingToast = toast.loading(
+      isActive ? 'Menonaktifkan produk...' : 'Mengaktifkan produk...'
+    );
+
+    try {
+      if (isActive) {
+        await deactivateProduct(id);
+        setIsActive(false);
+        toast.success('Produk berhasil dinonaktifkan', { id: loadingToast });
+      } else {
+        await activateProduct(id);
+        setIsActive(true);
+        toast.success('Produk berhasil diaktifkan', { id: loadingToast });
+      }
+      setShowToggleModal(false);
+    } catch (error) {
+      toast.error('Gagal: ' + error.message, { id: loadingToast });
+    } finally {
+      setToggling(false);
+    }
+  };
+
   const categoryOptions = categories.map((cat) => ({
     value: cat.id,
     label: cat.name,
@@ -227,9 +261,22 @@ const ProductForm = () => {
       </button>
 
       <div className="admin-card max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">
-          {isEdit ? 'Edit Produk' : 'Tambah Produk Baru'}
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">
+            {isEdit ? 'Edit Produk' : 'Tambah Produk Baru'}
+          </h1>
+          {isEdit && (
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                isActive
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-200 text-gray-600'
+              }`}
+            >
+              {isActive ? 'Aktif' : 'Nonaktif'}
+            </span>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {/* Nama Produk */}
@@ -501,8 +548,54 @@ const ProductForm = () => {
               Batal
             </button>
           </div>
+
+          {/* Tombol Nonaktifkan/Aktifkan — hanya saat edit */}
+          {isEdit && (
+            <div className="pt-4 border-t border-white/40">
+              <button
+                type="button"
+                onClick={() => setShowToggleModal(true)}
+                disabled={toggling}
+                className={`w-full py-3 rounded-lg transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg ${
+                  isActive
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'bg-green-500 text-white hover:bg-green-600'
+                }`}
+              >
+                {isActive ? (
+                  <>
+                    <FiEyeOff /> Nonaktifkan Produk
+                  </>
+                ) : (
+                  <>
+                    <FiEye /> Aktifkan Produk
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                {isActive
+                  ? 'Produk akan disembunyikan dari katalog customer, tapi tetap tersimpan di database dan riwayat pesanan.'
+                  : 'Produk akan kembali muncul di katalog customer.'}
+              </p>
+            </div>
+          )}
         </form>
       </div>
+
+      <ConfirmModal
+        isOpen={showToggleModal}
+        title={isActive ? 'Nonaktifkan Produk' : 'Aktifkan Produk'}
+        message={
+          isActive
+            ? 'Produk ini akan disembunyikan dari katalog customer, tapi tetap tersimpan di database dan riwayat pesanan. Yakin ingin menonaktifkan?'
+            : 'Produk ini akan kembali muncul di katalog customer. Yakin ingin mengaktifkan?'
+        }
+        onConfirm={handleToggleStatus}
+        onCancel={() => setShowToggleModal(false)}
+        confirmText={isActive ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan'}
+        cancelText="Batal"
+        confirmColor={isActive ? 'red' : 'green'}
+      />
     </AdminLayout>
   );
 };
