@@ -5,12 +5,13 @@ import {
   FiBarChart2, FiLogOut, FiUser, FiUsers
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { logout } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
 import ConfirmModal from '../common/ConfirmModal';
 
 const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const menuItems = [
@@ -26,9 +27,14 @@ const AdminLayout = ({ children }) => {
 
   const handleConfirmLogout = async () => {
     setShowLogoutModal(false);
-    await logout();
-    toast.success('Berhasil logout');
-    navigate('/toko', { replace: true });
+    try {
+      await logout();
+      toast.success('Berhasil logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      window.location.href = '/toko';
+    }
   };
 
   return (

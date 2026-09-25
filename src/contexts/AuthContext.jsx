@@ -77,7 +77,6 @@ export const AuthProvider = ({ children }) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
-      // Bersihkan state
       setUser(null);
       setProfile(null);
       localStorage.removeItem('adminToken');

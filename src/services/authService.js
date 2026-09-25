@@ -1,27 +1,45 @@
-const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN;
+import { supabase } from './supabaseClient';
 
-export const loginWithToken = (token) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (token === ADMIN_TOKEN) {
-        localStorage.setItem('adminToken', token);
-        resolve({ success: true });
-      } else {
-        reject({ success: false, message: 'Token tidak valid!' });
-      }
-    }, 1500);
-  });
+export const logout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    console.warn('Logout warning:', error);
+  }
 };
 
-export const logout = () => {
-  localStorage.removeItem('adminToken');
-  // Tidak ada redirect di sini — biar komponen yang handle
+export const getCurrentUser = async () => {
+  const { data } = await supabase.auth.getUser();
+  return data?.user || null;
 };
 
-export const isAuthenticated = () => {
-  return localStorage.getItem('adminToken') === ADMIN_TOKEN;
+export const getCurrentProfile = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) return null;
+  return data;
 };
 
-export const getAdminToken = () => {
-  return localStorage.getItem('adminToken');
+export const isAuthenticated = async () => {
+  const { data } = await supabase.auth.getSession();
+  return !!data?.session;
+};
+
+export const isAdmin = async () => {
+  const profile = await getCurrentProfile();
+  return profile?.role === 'admin';
+};
+
+export const requireAdmin = async () => {
+  const authenticated = await isAuthenticated();
+  if (!authenticated) return false;
+  return await isAdmin();
 };

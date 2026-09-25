@@ -44,7 +44,7 @@ const AboutStore = () => {
 
   const contacts = [
     { icon: <FiMapPin className="w-5 h-5" />, label: 'Ponorogo, Jawa Timur, Indonesia' },
-    { icon: <FiPhone className="w-5 h-5" />, label: '+62 812 3456 7890' },
+    { icon: <FiPhone className="w-5 h-5" />, label: '+62 822 4563 8337' },
     { icon: <FiMail className="w-5 h-5" />, label: 'hello@urbanknitters.id' },
   ];
 

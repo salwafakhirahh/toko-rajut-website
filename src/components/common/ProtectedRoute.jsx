@@ -1,25 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { isAuthenticated } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 
 const ProtectedRoute = ({ children }) => {
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setAuthenticated(isAuthenticated());
-      setLoading(false);
-    }, 1500);
-  }, []);
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner message="Memverifikasi akses admin..." />;
+    return <LoadingSpinner message="Memverifikasi akses..." />;
   }
 
-  if (!authenticated) {
-    // ✅ Redirect ke halaman TAMU, bukan login admin
+  if (!user) {
+    return <Navigate to="/toko/admin" replace />;
+  }
+
+  if (profile?.role !== 'admin') {
     return <Navigate to="/toko" replace />;
   }
 

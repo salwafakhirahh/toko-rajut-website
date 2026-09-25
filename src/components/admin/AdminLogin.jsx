@@ -3,15 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiLock, FiMail, FiShield, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { supabase } from '../../services/supabaseClient';
-import { loginWithToken } from '../../services/authService';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const AdminLogin = () => {
-  const [formData, setFormData] = useState({ email: '', password: '', token: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showToken, setShowToken] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -32,9 +30,6 @@ const AdminLogin = () => {
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password minimal 6 karakter';
     }
-    if (!formData.token.trim()) {
-      newErrors.token = 'Token admin wajib diisi';
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -45,14 +40,17 @@ const AdminLogin = () => {
       toast.error('Mohon periksa kembali data yang belum lengkap');
       return;
     }
+
     setLoading(true);
     try {
+      // Login ke Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
       if (error) throw error;
 
+      // Cek role di tabel profiles
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -64,11 +62,10 @@ const AdminLogin = () => {
         throw new Error('Akun ini bukan admin');
       }
 
-      await loginWithToken(formData.token);
-      localStorage.setItem('adminToken', formData.token);
       toast.success('Login admin berhasil!');
-      navigate('/toko/admin/dashboard');
+      navigate('/toko/admin/dashboard', { replace: true });
     } catch (error) {
+      console.error(error);
       toast.error(error.message || 'Login gagal');
       setLoading(false);
     }
@@ -138,37 +135,6 @@ const AdminLogin = () => {
             </div>
             {errors.password && (
               <p className="text-xs text-red-500 mt-1">{errors.password}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Token Admin <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type={showToken ? 'text' : 'password'}
-                name="token"
-                value={formData.token}
-                onChange={handleChange}
-                placeholder="Masukkan token admin"
-                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.token ? 'border-red-400' : 'border-white/40'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken((prev) => !prev)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-                aria-label={showToken ? 'Sembunyikan token' : 'Tampilkan token'}
-              >
-                {showToken ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
-              </button>
-            </div>
-            {errors.token && (
-              <p className="text-xs text-red-500 mt-1">{errors.token}</p>
             )}
           </div>
 
