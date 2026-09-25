@@ -137,6 +137,25 @@ export const getCategories = async () => {
   return data;
 };
 
+// Ambil kategori beserta jumlah produk di dalamnya
+export const getCategoriesWithProductCount = async () => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, slug, description, created_at, products(count)')
+    .order('name');
+
+  if (error) throw error;
+
+  return (data || []).map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    slug: cat.slug,
+    description: cat.description,
+    created_at: cat.created_at,
+    product_count: cat.products?.[0]?.count || 0,
+  }));
+};
+
 export const addCategory = async (categoryData) => {
   const slug = categoryData.name
     .toLowerCase()
