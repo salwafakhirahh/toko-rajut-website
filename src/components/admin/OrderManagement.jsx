@@ -11,8 +11,8 @@ import StatusBadge from '../common/StatusBadge';
 import { getOrders, updateOrderStatus } from '../../services/supabaseClient';
 import { getOrderDetailById } from '../../services/reportService';
 import LoadingSpinner from '../common/LoadingSpinner';
+import ReceiptModal from './ReceiptModal';
 
-// Status berikutnya, dibedakan per metode pengiriman
 const getNextStatuses = (currentStatus, deliveryMethod) => {
   if (deliveryMethod === 'pickup') {
     switch (currentStatus) {
@@ -23,8 +23,6 @@ const getNextStatuses = (currentStatus, deliveryMethod) => {
       default: return [];
     }
   }
-
-  // delivery (kirim ke alamat)
   switch (currentStatus) {
     case 'pending': return ['paid', 'cancelled'];
     case 'paid': return ['shipped', 'cancelled'];
@@ -36,23 +34,6 @@ const getNextStatuses = (currentStatus, deliveryMethod) => {
 };
 
 const isFinalStatus = (status) => status === 'delivered' || status === 'cancelled';
-
-const paymentLabel = (method) => {
-  switch (method) {
-    case 'cod': return 'Tunai / COD';
-    case 'transfer': return 'Transfer Bank';
-    case 'ewallet': return 'E-Wallet';
-    default: return method || '-';
-  }
-};
-
-const deliveryLabel = (method) => {
-  switch (method) {
-    case 'pickup': return 'Ambil di Toko';
-    case 'delivery': return 'Kirim ke Alamat';
-    default: return method || '-';
-  }
-};
 
 const StatusModal = ({ order, isOpen, onClose, onChange }) => {
   const [confirmAction, setConfirmAction] = useState(null);
@@ -246,7 +227,12 @@ const OrderManagement = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
-  const [printing, setPrinting] = useState(false);
+
+  // State untuk modal struk
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptOrder, setReceiptOrder] = useState(null);
+  const [receiptItems, setReceiptItems] = useState([]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -281,73 +267,18 @@ const OrderManagement = () => {
     }
   };
 
-  const handlePrintReceipt = async (orderId) => {
-    setPrinting(true);
+  // Buka modal struk (preview + tombol Cetak / Simpan PDF)
+  const handleViewReceipt = async (orderId) => {
     const loadingToast = toast.loading('Menyiapkan struk...');
     try {
       const { order, items } = await getOrderDetailById(orderId);
-
-      const rows = items.map((it) => `
-        <tr>
-          <td>${it.product_name}</td>
-          <td style="text-align:center">${it.quantity}</td>
-          <td style="text-align:right">Rp ${Number(it.price).toLocaleString('id-ID')}</td>
-          <td style="text-align:right">Rp ${Number(it.subtotal).toLocaleString('id-ID')}</td>
-        </tr>`).join('');
-
-      const html = `
-        <html>
-        <head><title>Struk ${order.order_number}</title>
-        <style>
-          body { font-family: 'Courier New', monospace; padding: 20px; max-width: 320px; margin: 0 auto; color: #333; }
-          h1 { font-size: 18px; text-align: center; margin: 0 0 4px 0; }
-          .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 12px; }
-          .divider { border-top: 1px dashed #999; margin: 8px 0; }
-          .row { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; }
-          .label { color: #666; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-          th, td { padding: 4px 0; text-align: left; }
-          th { border-bottom: 1px solid #999; font-size: 11px; }
-          .total { font-size: 14px; font-weight: bold; margin-top: 8px; display: flex; justify-content: space-between; }
-          .footer { text-align: center; font-size: 11px; color: #888; margin-top: 16px; }
-        </style></head>
-        <body>
-          <h1>Urban Knitters</h1>
-          <div class="subtitle">Toko Rajut Handmade</div>
-          <div class="divider"></div>
-          <div class="row"><span class="label">No Pesanan</span><span>${order.order_number}</span></div>
-          <div class="row"><span class="label">Tanggal</span><span>${new Date(order.created_at).toLocaleString('id-ID')}</span></div>
-          <div class="row"><span class="label">Pelanggan</span><span>${order.customer_name || '-'}</span></div>
-          <div class="row"><span class="label">Telepon</span><span>${order.customer_phone || '-'}</span></div>
-          <div class="row"><span class="label">Pengiriman</span><span>${deliveryLabel(order.delivery_method)}</span></div>
-          <div class="row"><span class="label">Pembayaran</span><span>${paymentLabel(order.payment_method)}</span></div>
-          ${order.delivery_method === 'delivery' && order.delivery_address ? `<div class="row"><span class="label">Alamat</span><span style="text-align:right; max-width:180px">${order.delivery_address}</span></div>` : ''}
-          <div class="divider"></div>
-          <table>
-            <thead><tr>
-              <th>Produk</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Subtotal</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-          <div class="divider"></div>
-          <div class="total"><span>TOTAL</span><span>Rp ${Number(order.total_amount).toLocaleString('id-ID')}</span></div>
-          <div class="divider"></div>
-          <div class="footer">Terima kasih telah berbelanja!</div>
-        </body>
-        </html>`;
-
-      const win = window.open('', '_blank');
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 300);
-
-      toast.success('Struk siap dicetak', { id: loadingToast });
+      setReceiptOrder(order);
+      setReceiptItems(items);
+      setShowReceipt(true);
+      toast.success('Struk siap', { id: loadingToast });
     } catch (error) {
       console.error(error);
-      toast.error('Gagal menyiapkan struk', { id: loadingToast });
-    } finally {
-      setPrinting(false);
+      toast.error('Gagal memuat struk', { id: loadingToast });
     }
   };
 
@@ -485,10 +416,9 @@ const OrderManagement = () => {
                             Detail
                           </button>
                           <button
-                            onClick={() => handlePrintReceipt(order.id)}
-                            disabled={printing}
-                            className="flex items-center gap-1 px-2 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold disabled:opacity-50"
-                            title="Cetak struk"
+                            onClick={() => handleViewReceipt(order.id)}
+                            className="flex items-center gap-1 px-2 py-1.5 bg-dustyRose text-white rounded-lg hover:bg-coral text-xs font-semibold"
+                            title="Lihat & cetak struk"
                           >
                             <FiPrinter className="w-3.5 h-3.5" />
                             Struk
@@ -519,6 +449,17 @@ const OrderManagement = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onChange={handleStatusChange}
+      />
+
+      <ReceiptModal
+        isOpen={showReceipt}
+        onClose={() => {
+          setShowReceipt(false);
+          setReceiptOrder(null);
+          setReceiptItems([]);
+        }}
+        order={receiptOrder}
+        items={receiptItems}
       />
     </AdminLayout>
   );
