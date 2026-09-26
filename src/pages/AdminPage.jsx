@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Outlet } from 'react-router-dom';
 import AdminLogin from '../components/admin/AdminLogin';
 import AdminRegister from '../components/admin/AdminRegister';
 import Dashboard from '../components/admin/Dashboard';
@@ -18,20 +18,21 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 const AdminPage = () => {
   return (
     <Routes>
-      <Route path="/" element={<AdminLogin />} />
-      <Route path="/register" element={<AdminRegister />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/products" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
-      <Route path="/products/add" element={<ProtectedRoute><ProductForm /></ProtectedRoute>} />
-      <Route path="/products/edit/:id" element={<ProtectedRoute><ProductForm /></ProtectedRoute>} />
-      <Route path="/products/detail/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-      <Route path="/categories" element={<ProtectedRoute><CategoryManagement /></ProtectedRoute>} />
-      <Route path="/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
-      <Route path="/orders/detail/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><SalesReport /></ProtectedRoute>} />
-      <Route path="/reports/top" element={<ProtectedRoute><TopProducts /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
+      {/* Path relatif terhadap /toko/admin/* */}
+      <Route index element={<AdminLogin />} />
+      <Route path="register" element={<AdminRegister />} />
+      <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="products" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
+      <Route path="products/add" element={<ProtectedRoute><ProductForm /></ProtectedRoute>} />
+      <Route path="products/edit/:id" element={<ProtectedRoute><ProductForm /></ProtectedRoute>} />
+      <Route path="products/detail/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+      <Route path="categories" element={<ProtectedRoute><CategoryManagement /></ProtectedRoute>} />
+      <Route path="orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
+      <Route path="orders/detail/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+      <Route path="reports" element={<ProtectedRoute><SalesReport /></ProtectedRoute>} />
+      <Route path="reports/top" element={<ProtectedRoute><TopProducts /></ProtectedRoute>} />
+      <Route path="users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+      <Route path="profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
     </Routes>
   );
 };

@@ -1,603 +1,341 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  FiSave, FiArrowLeft, FiPlus, FiX, FiFolder, FiPercent, FiImage,
-  FiEyeOff, FiEye
+  FiPlus, FiEdit, FiSearch, FiEye, FiTrash2, FiPackage
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
-import CustomSelect from '../common/CustomSelect';
 import ConfirmModal from '../common/ConfirmModal';
 import {
-  addProduct,
-  updateProduct,
-  getProductById,
-  getCategories,
-  addCategory,
-  uploadProductImage,
-  deactivateProduct,
-  activateProduct,
+  getAllProductsAdmin,
+  deleteProduct,
+  checkProductOrders,
 } from '../../services/supabaseClient';
+import { calculateFinalPrice } from '../../utils/priceHelper';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-const ProductForm = () => {
-  const { id } = useParams();
+const ProductManagement = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active');
+  const [confirmId, setConfirmId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [deleteWarning, setDeleteWarning] = useState('');
+  const [checkingOrders, setCheckingOrders] = useState(false);
+  const [canDelete, setCanDelete] = useState(true);
   const navigate = useNavigate();
-  const isEdit = !!id;
-
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    stock: '',
-    category_id: '',
-    image_url: '',
-    discount: 0,
-  });
-  const [categories, setCategories] = useState([]);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [showCategoryInput, setShowCategoryInput] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [addingCategory, setAddingCategory] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [isActive, setIsActive] = useState(true);
-  const [showToggleModal, setShowToggleModal] = useState(false);
-  const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, [id]);
+    fetchProducts();
+  }, []);
 
-  const fetchData = async () => {
+  const fetchProducts = async () => {
     try {
-      const categoriesData = await getCategories();
-      setCategories(categoriesData);
-
-      if (isEdit) {
-        const product = await getProductById(id);
-        setFormData({
-          name: product.name || '',
-          description: product.description || '',
-          price: product.price || '',
-          stock: product.stock || '',
-          category_id: product.category_id || '',
-          image_url: product.image_url || '',
-          discount: product.discount || 0,
-        });
-        setImagePreview(product.image_url || '');
-        setIsActive(product.is_active !== false);
-      }
+      const data = await getAllProductsAdmin();
+      setProducts(data);
     } catch (error) {
-      toast.error('Gagal memuat data');
-      console.error(error);
-    } finally {
-      setFetching(false);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error('Nama kategori tidak boleh kosong');
-      return;
-    }
-
-    setAddingCategory(true);
-    const loadingToast = toast.loading('Menambahkan kategori...');
-
-    try {
-      const newCategory = await addCategory({
-        name: newCategoryName.trim(),
-        description: '',
-      });
-
-      const updatedCategories = await getCategories();
-      setCategories(updatedCategories);
-
-      setFormData({ ...formData, category_id: newCategory.id });
-      setErrors((prev) => ({ ...prev, category_id: '' }));
-      setNewCategoryName('');
-      setShowCategoryInput(false);
-
-      toast.success('Kategori berhasil ditambahkan!', { id: loadingToast });
-    } catch (error) {
-      toast.error('Gagal menambahkan kategori: ' + error.message, { id: loadingToast });
-    } finally {
-      setAddingCategory(false);
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name || !formData.name.trim()) {
-      newErrors.name = 'Nama produk wajib diisi';
-    } else if (formData.name.trim().length < 3) {
-      newErrors.name = 'Nama produk minimal 3 karakter';
-    } else if (formData.name.trim().length > 200) {
-      newErrors.name = 'Nama produk maksimal 200 karakter';
-    }
-
-    if (!formData.category_id) {
-      newErrors.category_id = 'Kategori produk wajib dipilih';
-    }
-
-    if (formData.price === '' || formData.price === null || formData.price === undefined) {
-      newErrors.price = 'Harga wajib diisi';
-    } else if (isNaN(Number(formData.price))) {
-      newErrors.price = 'Harga harus berupa angka';
-    } else if (Number(formData.price) <= 0) {
-      newErrors.price = 'Harga harus lebih dari 0';
-    } else if (Number(formData.price) > 999999999) {
-      newErrors.price = 'Harga terlalu besar';
-    }
-
-    if (formData.stock === '' || formData.stock === null || formData.stock === undefined) {
-      newErrors.stock = 'Stok wajib diisi';
-    } else if (isNaN(Number(formData.stock))) {
-      newErrors.stock = 'Stok harus berupa angka';
-    } else if (Number(formData.stock) < 0) {
-      newErrors.stock = 'Stok tidak boleh negatif';
-    } else if (Number(formData.stock) > 999999) {
-      newErrors.stock = 'Stok terlalu besar';
-    } else if (!Number.isInteger(Number(formData.stock))) {
-      newErrors.stock = 'Stok harus bilangan bulat';
-    }
-
-    const discount = Number(formData.discount) || 0;
-    if (discount < 0 || discount > 100) {
-      newErrors.discount = 'Diskon harus antara 0 sampai 100 persen';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error('Mohon periksa kembali data yang belum lengkap');
-      return;
-    }
-
-    setLoading(true);
-    const loadingToast = toast.loading('Menyimpan produk...');
-
-    try {
-      let imageUrl = formData.image_url;
-      if (imageFile) {
-        imageUrl = await uploadProductImage(imageFile);
-      }
-
-      const data = {
-        ...formData,
-        name: formData.name.trim(),
-        price: Number(formData.price),
-        stock: parseInt(formData.stock, 10),
-        image_url: imageUrl,
-        discount: parseInt(formData.discount) || 0,
-      };
-
-      if (isEdit) {
-        await updateProduct(id, data);
-        toast.success('Produk berhasil diupdate!', { id: loadingToast });
-      } else {
-        await addProduct(data);
-        toast.success('Produk berhasil ditambahkan!', { id: loadingToast });
-      }
-
-      setTimeout(() => navigate('/toko/admin/products'), 1500);
-    } catch (error) {
-      toast.error('Gagal menyimpan: ' + error.message, { id: loadingToast });
+      toast.error('Gagal memuat produk');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleStatus = async () => {
-    setToggling(true);
-    const loadingToast = toast.loading(
-      isActive ? 'Menonaktifkan produk...' : 'Mengaktifkan produk...'
-    );
+  const handleDeleteClick = async (id) => {
+    setConfirmId(id);
+    setShowModal(true);
+    setCheckingOrders(true);
+    setDeleteWarning('');
+    setCanDelete(true);
 
     try {
-      if (isActive) {
-        await deactivateProduct(id);
-        setIsActive(false);
-        toast.success('Produk berhasil dinonaktifkan', { id: loadingToast });
+      const orderCount = await checkProductOrders(id);
+
+      if (orderCount > 0) {
+        setCanDelete(false);
+        setDeleteWarning(
+          `Produk ini sudah pernah dipesan ${orderCount} kali. ` +
+          `Menghapus permanen akan membuat riwayat pesanan kehilangan referensi. ` +
+          `Silakan nonaktifkan saja di halaman Edit Produk.`
+        );
       } else {
-        await activateProduct(id);
-        setIsActive(true);
-        toast.success('Produk berhasil diaktifkan', { id: loadingToast });
+        setCanDelete(true);
+        setDeleteWarning(
+          'Produk akan dihapus permanen dari database. ' +
+          'Tindakan ini tidak dapat dibatalkan. Yakin?'
+        );
       }
-      setShowToggleModal(false);
     } catch (error) {
-      toast.error('Gagal: ' + error.message, { id: loadingToast });
+      console.error('Gagal memeriksa riwayat pesanan:', error);
+      setCanDelete(false);
+      setDeleteWarning(
+        'Tidak dapat memverifikasi riwayat pesanan. Demi keamanan, ' +
+        'penghapusan permanen dibatalkan. Silakan nonaktifkan saja.'
+      );
     } finally {
-      setToggling(false);
+      setCheckingOrders(false);
     }
   };
 
-  const categoryOptions = categories.map((cat) => ({
-    value: cat.id,
-    label: cat.name,
-  }));
+  const handleConfirmDelete = async () => {
+    if (!canDelete) {
+      toast.error('Produk tidak dapat dihapus karena sudah memiliki riwayat pesanan.');
+      setShowModal(false);
+      setConfirmId(null);
+      return;
+    }
 
-  const price = parseInt(formData.price) || 0;
-  const discount = parseInt(formData.discount) || 0;
-  const finalPrice = price - (price * discount / 100);
+    setShowModal(false);
+    const loadingToast = toast.loading('Menghapus produk...');
+    try {
+      await deleteProduct(confirmId);
+      toast.success('Produk berhasil dihapus permanen', { id: loadingToast });
+      await fetchProducts();
+    } catch (error) {
+      toast.error(error.message || 'Gagal menghapus produk', { id: loadingToast });
+    } finally {
+      setConfirmId(null);
+      setDeleteWarning('');
+    }
+  };
 
-  if (fetching) return <LoadingSpinner message="Memuat data..." />;
+  const filtered = products.filter((p) => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && p.is_active) ||
+      (statusFilter === 'inactive' && !p.is_active);
+    return matchSearch && matchStatus;
+  });
+
+  const activeCount = products.filter((p) => p.is_active).length;
+  const inactiveCount = products.length - activeCount;
+
+  if (loading) return <LoadingSpinner message="Memuat produk..." />;
 
   return (
     <AdminLayout>
-      <button
-        onClick={() => navigate('/toko/admin/products')}
-        className="flex items-center gap-2 text-gray-600 hover:text-dustyRose mb-4 transition-colors"
-      >
-        <FiArrowLeft /> Kembali
-      </button>
-
-      <div className="admin-card max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">
-            {isEdit ? 'Edit Produk' : 'Tambah Produk Baru'}
-          </h1>
-          {isEdit && (
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                isActive
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {isActive ? 'Aktif' : 'Nonaktif'}
-            </span>
-          )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Manajemen Produk</h1>
+          <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+            <FiPackage className="w-3.5 h-3.5" />
+            Aktif: <strong className="text-green-600">{activeCount}</strong>
+            <span className="text-gray-400">·</span>
+            Nonaktif: <strong className="text-gray-500">{inactiveCount}</strong>
+            <span className="text-gray-400">·</span>
+            Ditampilkan: <strong className="text-dustyRose">{filtered.length}</strong>
+          </p>
         </div>
+        <Link
+          to="/toko/admin/products/add"
+          className="flex items-center gap-2 px-4 py-2 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all shadow-md text-sm"
+        >
+          <FiPlus className="w-4 h-4" /> Tambah Produk
+        </Link>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {/* Nama Produk */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Nama Produk <span className="text-red-500">*</span>
-            </label>
+      <div className="admin-card">
+        <div className="mb-4 flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[180px]">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Contoh: Baju Rajut Polos"
-              className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                errors.name ? 'border-red-400' : 'border-white/40'
-              }`}
-            />
-            {errors.name && (
-              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-            )}
-          </div>
-
-          {/* Kategori */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="flex items-center gap-2 text-gray-700 font-medium">
-                <FiFolder className="text-dustyRose" />
-                Kategori <span className="text-red-500">*</span>
-              </label>
-              {!showCategoryInput && (
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryInput(true)}
-                  className="flex items-center gap-1 text-sm text-dustyRose hover:text-coral font-semibold transition-colors"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Tambah Kategori Baru
-                </button>
-              )}
-            </div>
-
-            {showCategoryInput && (
-              <div className="mb-3 p-4 bg-gradient-to-r from-dustyRose/10 to-coral/10 rounded-xl border border-dustyRose/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-dustyRose/20 flex items-center justify-center">
-                    <FiPlus className="w-4 h-4 text-dustyRose" />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">
-                    Tambah Kategori Baru
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Contoh: Topi Rajut, Syal, dll..."
-                    className="flex-1 px-4 py-2.5 bg-white/60 rounded-lg border border-dustyRose/30 focus:outline-none focus:ring-2 focus:ring-dustyRose text-sm"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddCategory();
-                      }
-                    }}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCategory}
-                    disabled={addingCategory}
-                    className="px-5 py-2.5 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all text-sm font-semibold disabled:opacity-50 shadow-lg"
-                  >
-                    {addingCategory ? 'Menyimpan...' : 'Simpan'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCategoryInput(false);
-                      setNewCategoryName('');
-                    }}
-                    className="px-3 py-2.5 bg-white/60 text-gray-600 rounded-lg hover:bg-white/80 transition-all border border-white/40"
-                  >
-                    <FiX className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2 ml-10">
-                  Kategori akan otomatis tersimpan dan langsung terpilih
-                </p>
-              </div>
-            )}
-
-            <div className={errors.category_id ? 'ring-2 ring-red-400 rounded-lg' : ''}>
-              <CustomSelect
-                options={categoryOptions}
-                value={formData.category_id}
-                onChange={(value) => {
-                  setFormData({ ...formData, category_id: value });
-                  if (errors.category_id) {
-                    setErrors((prev) => ({ ...prev, category_id: '' }));
-                  }
-                }}
-                placeholder="Pilih Kategori"
-              />
-            </div>
-
-            {errors.category_id && (
-              <p className="text-xs text-red-500 mt-1">{errors.category_id}</p>
-            )}
-
-            {categories.length === 0 && !showCategoryInput && (
-              <p className="text-xs text-red-500 mt-2">
-                Belum ada kategori. Klik "Tambah Kategori Baru" untuk membuat.
-              </p>
-            )}
-          </div>
-
-          {/* Harga & Stok */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Harga (Rp) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="150000"
-                min="0"
-                step="1"
-                className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.price ? 'border-red-400' : 'border-white/40'
-                }`}
-              />
-              {errors.price && (
-                <p className="text-xs text-red-500 mt-1">{errors.price}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Stok <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="stock"
-                value={formData.stock}
-                onChange={handleChange}
-                placeholder="10"
-                min="0"
-                step="1"
-                className={`w-full px-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.stock ? 'border-red-400' : 'border-white/40'
-                }`}
-              />
-              {errors.stock && (
-                <p className="text-xs text-red-500 mt-1">{errors.stock}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Diskon */}
-          <div className="p-4 bg-gradient-to-r from-dustyRose/10 to-coral/10 rounded-xl border border-dustyRose/30">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-dustyRose/20 flex items-center justify-center">
-                <FiPercent className="w-4 h-4 text-dustyRose" />
-              </div>
-              <span className="text-sm font-semibold text-gray-700">
-                Pengaturan Diskon
-              </span>
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-2 text-sm">
-                Diskon (%)
-              </label>
-              <input
-                type="number"
-                name="discount"
-                value={formData.discount}
-                onChange={handleChange}
-                min="0"
-                max="100"
-                placeholder="0"
-                className={`w-full px-4 py-2 bg-white/60 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.discount ? 'border-red-400' : 'border-dustyRose/30'
-                }`}
-              />
-              {errors.discount && (
-                <p className="text-xs text-red-500 mt-1">{errors.discount}</p>
-              )}
-            </div>
-
-            {discount > 0 && price > 0 && (
-              <div className="mt-4 p-3 bg-white/40 rounded-lg">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Harga Normal:</span>
-                  <span className="line-through text-gray-400">
-                    Rp {price.toLocaleString('id-ID')}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Diskon ({discount}%):</span>
-                  <span className="text-red-500">
-                    -Rp {(price * discount / 100).toLocaleString('id-ID')}
-                  </span>
-                </div>
-                <div className="flex justify-between font-bold pt-2 border-t border-dustyRose/20">
-                  <span className="text-gray-800">Harga Final:</span>
-                  <span className="text-dustyRose">
-                    Rp {finalPrice.toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Deskripsi */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Deskripsi
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4"
-              placeholder="Deskripsi produk..."
-              className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose resize-none"
+              placeholder="Cari produk..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm bg-white/30 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
             />
           </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-white/60 rounded-lg border border-white/40 focus:outline-none focus:ring-2 focus:ring-dustyRose"
+          >
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
+            <option value="all">Semua</option>
+          </select>
+        </div>
 
-          {/* Upload Gambar */}
-          <div>
-            <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-              <FiImage className="text-dustyRose" />
-              Gambar Produk
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full px-4 py-2 bg-white/30 rounded-lg border border-white/40 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-dustyRose file:text-white hover:file:bg-coral cursor-pointer"
-            />
-            {imagePreview && (
-              <div className="mt-4">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-32 h-32 object-cover rounded-lg border-2 border-white/40 shadow-md"
-                />
-              </div>
-            )}
-          </div>
+        <div className="overflow-x-auto rounded-xl">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-white/40">
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-10">
+                  No
+                </th>
+                <th className="px-2 py-2.5 text-left text-xs font-bold text-gray-700 uppercase w-14">
+                  Gambar
+                </th>
+                <th className="px-2 py-2.5 text-left text-xs font-bold text-gray-700 uppercase">
+                  Nama Produk
+                </th>
+                <th className="px-2 py-2.5 text-right text-xs font-bold text-gray-700 uppercase w-24">
+                  Harga
+                </th>
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-16">
+                  Stok
+                </th>
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-20">
+                  Status
+                </th>
+                <th className="px-2 py-2.5 text-center text-xs font-bold text-gray-700 uppercase w-32">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/30">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-8 text-gray-500">
+                    <FiPackage className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                    <span className="text-sm">
+                      {search || statusFilter !== 'active'
+                        ? 'Tidak ada produk yang cocok'
+                        : 'Belum ada produk aktif'}
+                    </span>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((product, index) => {
+                  const finalPrice = calculateFinalPrice(product);
+                  const hasDiscount = (product.discount || 0) > 0;
+                  const isOutOfStock = product.stock === 0;
 
-          {/* Tombol */}
-          <div className="flex gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-3 bg-dustyRose text-white rounded-lg hover:bg-coral transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
-            >
-              <FiSave /> {loading ? 'Menyimpan...' : 'Simpan'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/toko/admin/products')}
-              className="px-6 py-3 bg-white/30 text-gray-700 rounded-lg hover:bg-white/50 transition-all"
-            >
-              Batal
-            </button>
-          </div>
+                  return (
+                    <tr key={product.id} className="hover:bg-white/20 transition-colors">
+                      <td className="px-2 py-2 text-center font-medium text-gray-700 text-xs">
+                        {index + 1}
+                      </td>
 
-          {/* Tombol Nonaktifkan/Aktifkan — hanya saat edit */}
-          {isEdit && (
-            <div className="pt-4 border-t border-white/40">
-              <button
-                type="button"
-                onClick={() => setShowToggleModal(true)}
-                disabled={toggling}
-                className={`w-full py-3 rounded-lg transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg ${
-                  isActive
-                    ? 'bg-red-500 text-white hover:bg-red-600'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
-              >
-                {isActive ? (
-                  <>
-                    <FiEyeOff /> Nonaktifkan Produk
-                  </>
-                ) : (
-                  <>
-                    <FiEye /> Aktifkan Produk
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-gray-500 text-center mt-2">
-                {isActive
-                  ? 'Produk akan disembunyikan dari katalog customer, tapi tetap tersimpan di database dan riwayat pesanan.'
-                  : 'Produk akan kembali muncul di katalog customer.'}
-              </p>
-            </div>
-          )}
-        </form>
+                      <td className="px-2 py-2">
+                        <div className="relative inline-block">
+                          <img
+                            src={product.image_url || `https://picsum.photos/50/50?random=${product.id}`}
+                            alt={product.name}
+                            className="w-10 h-10 object-cover rounded-lg shadow-sm"
+                          />
+                          {hasDiscount && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
+                              -{product.discount}%
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-2 py-2">
+                        <div className="font-medium text-gray-800 text-sm line-clamp-1">
+                          {product.name}
+                        </div>
+                        <div className="text-xs text-gray-500 line-clamp-1">
+                          {product.categories?.name || '-'}
+                        </div>
+                      </td>
+
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
+                        {hasDiscount ? (
+                          <>
+                            <div className="text-xs text-gray-400 line-through">
+                              Rp {product.price?.toLocaleString('id-ID')}
+                            </div>
+                            <div className="text-sm font-bold text-dustyRose">
+                              Rp {finalPrice.toLocaleString('id-ID')}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-sm font-bold text-dustyRose">
+                            Rp {product.price?.toLocaleString('id-ID')}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-2 py-2 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
+                            isOutOfStock
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}
+                        >
+                          {isOutOfStock ? 'Habis' : product.stock}
+                        </span>
+                      </td>
+
+                      <td className="px-2 py-2 text-center">
+                        {product.is_active ? (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap">
+                            Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 text-gray-600 whitespace-nowrap">
+                            Nonaktif
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-2 py-2">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => navigate(`/toko/admin/products/detail/${product.id}`)}
+                            className="p-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+                            title="Lihat Detail"
+                          >
+                            <FiEye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => navigate(`/toko/admin/products/edit/${product.id}`)}
+                            className="p-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
+                            title="Edit"
+                          >
+                            <FiEdit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(product.id)}
+                            className="p-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
+                            title="Hapus Permanen"
+                          >
+                            <FiTrash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <ConfirmModal
-        isOpen={showToggleModal}
-        title={isActive ? 'Nonaktifkan Produk' : 'Aktifkan Produk'}
+        isOpen={showModal}
+        title="Hapus Produk Permanen"
         message={
-          isActive
-            ? 'Produk ini akan disembunyikan dari katalog customer, tapi tetap tersimpan di database dan riwayat pesanan. Yakin ingin menonaktifkan?'
-            : 'Produk ini akan kembali muncul di katalog customer. Yakin ingin mengaktifkan?'
+          checkingOrders
+            ? 'Memeriksa riwayat pesanan...'
+            : deleteWarning
         }
-        onConfirm={handleToggleStatus}
-        onCancel={() => setShowToggleModal(false)}
-        confirmText={isActive ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan'}
-        cancelText="Batal"
-        confirmColor={isActive ? 'red' : 'green'}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowModal(false);
+          setConfirmId(null);
+          setDeleteWarning('');
+        }}
+        confirmText={
+          checkingOrders
+            ? 'Memeriksa...'
+            : canDelete
+            ? 'Ya, Hapus Permanen'
+            : 'Mengerti'
+        }
+        cancelText={canDelete ? 'Batal' : 'Tutup'}
+        confirmColor={canDelete ? 'red' : 'gray'}
+        disabled={checkingOrders || !canDelete}
       />
     </AdminLayout>
   );
 };
 
-export default ProductForm;
+export default ProductManagement;
