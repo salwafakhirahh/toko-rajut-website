@@ -43,6 +43,11 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login(formData.email, formData.password);
+
+      // Set flag just_logged_in supaya tidak di-auto-logout di HomePage
+      sessionStorage.setItem('just_logged_in', 'true');
+      sessionStorage.removeItem('toko_guest_mode'); // reset flag guest
+
       toast.success('Login berhasil!');
       setTimeout(() => navigate('/toko'), 1000);
     } catch (error) {
@@ -76,9 +81,8 @@ const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="email@example.com"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.email ? 'border-red-400' : 'border-white/40'
-                }`}
+                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${errors.email ? 'border-red-400' : 'border-white/40'
+                  }`}
               />
             </div>
             {errors.email && (
@@ -98,9 +102,8 @@ const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.password ? 'border-red-400' : 'border-white/40'
-                }`}
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${errors.password ? 'border-red-400' : 'border-white/40'
+                  }`}
               />
               <button
                 type="button"

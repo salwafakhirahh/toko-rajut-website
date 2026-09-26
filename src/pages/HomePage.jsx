@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getProducts, getCategories } from '../services/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 import ProductGrid from '../components/customer/ProductGrid';
 import AboutStore from '../components/customer/AboutStore';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -16,6 +17,48 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const { user, loading: authLoading, logout } = useAuth();
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    // Kalau user baru login, jangan logout, dan hapus flag-nya
+    const justLoggedIn = sessionStorage.getItem('just_logged_in');
+    if (justLoggedIn) {
+      sessionStorage.removeItem('just_logged_in');
+      sessionStorage.setItem('toko_guest_mode', 'true'); // tandai tab ini sudah dicek
+      return;
+    }
+
+    // Kalau tab ini sudah pernah dicek, skip
+    const hasChecked = sessionStorage.getItem('toko_guest_mode');
+    if (hasChecked) return;
+
+    if (user) {
+      // Ada user login -> logout paksa
+      const performLogout = async () => {
+        try {
+          // Set flag DULU sebelum logout, untuk cegah infinite loop
+          sessionStorage.setItem('toko_guest_mode', 'true');
+
+          await logout();
+          toast.success('Anda telah logout dari halaman toko');
+
+          // Hard refresh untuk bersihkan state
+          setTimeout(() => {
+            window.location.replace('/toko');
+          }, 800);
+        } catch (error) {
+          console.error('Auto-logout error:', error);
+        }
+      };
+
+      performLogout();
+    } else {
+      // User belum login -> cukup set flag
+      sessionStorage.setItem('toko_guest_mode', 'true');
+    }
+  }, [user, authLoading, logout]);
 
   useEffect(() => {
     fetchData();
