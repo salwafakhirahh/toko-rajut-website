@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiUser, FiShield, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { supabase } from '../../services/supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -11,16 +11,12 @@ const AdminRegister = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    adminToken: '',
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showAdminToken, setShowAdminToken] = useState(false);
   const navigate = useNavigate();
-
-  const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || 'rahasia_admin_123';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,11 +45,6 @@ const AdminRegister = () => {
       newErrors.confirmPassword = 'Konfirmasi password wajib diisi';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Password tidak cocok';
-    }
-    if (!formData.adminToken.trim()) {
-      newErrors.adminToken = 'Token admin wajib diisi';
-    } else if (formData.adminToken !== ADMIN_TOKEN) {
-      newErrors.adminToken = 'Token admin tidak valid';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -216,39 +207,6 @@ const AdminRegister = () => {
             {errors.confirmPassword && (
               <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
             )}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Token Admin <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type={showAdminToken ? 'text' : 'password'}
-                name="adminToken"
-                value={formData.adminToken}
-                onChange={handleChange}
-                placeholder="Masukkan token admin"
-                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
-                  errors.adminToken ? 'border-red-400' : 'border-white/40'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowAdminToken((prev) => !prev)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-                aria-label={showAdminToken ? 'Sembunyikan token' : 'Tampilkan token'}
-              >
-                {showAdminToken ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
-              </button>
-            </div>
-            {errors.adminToken && (
-              <p className="text-xs text-red-500 mt-1">{errors.adminToken}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Hanya yang tahu token yang bisa daftar admin            </p>
           </div>
 
           <button
