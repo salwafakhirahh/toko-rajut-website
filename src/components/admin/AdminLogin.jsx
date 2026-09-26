@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiLock, FiMail, FiShield, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiLock, FiMail, FiShield, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { supabase } from '../../services/supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -43,14 +43,12 @@ const AdminLogin = () => {
 
     setLoading(true);
     try {
-      // Login ke Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
       if (error) throw error;
 
-      // Cek role di tabel profiles
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -100,8 +98,9 @@ const AdminLogin = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="admin@tokorajut.com"
-                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${errors.email ? 'border-red-400' : 'border-white/40'
-                  }`}
+                className={`w-full pl-10 pr-4 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.email ? 'border-red-400' : 'border-white/40'
+                }`}
               />
             </div>
             {errors.email && (
@@ -121,8 +120,9 @@ const AdminLogin = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${errors.password ? 'border-red-400' : 'border-white/40'
-                  }`}
+                className={`w-full pl-10 pr-10 py-2 bg-white/30 rounded-lg border focus:outline-none focus:ring-2 focus:ring-dustyRose ${
+                  errors.password ? 'border-red-400' : 'border-white/40'
+                }`}
               />
               <button
                 type="button"
@@ -156,18 +156,9 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-white/40">
-          <p className="text-center text-gray-600 text-sm">
-            Belum punya akun admin?{' '}
-            <Link
-              to="/toko/admin/register"
-              className="text-dustyRose font-semibold hover:text-coral inline-flex items-center gap-1"
-            >
-              <FiUserPlus className="w-4 h-4" />
-              Daftar Admin
-            </Link>
-          </p>
-        </div>
+        <p className="text-center text-gray-500 text-xs mt-6">
+          Admin hanya dapat login. Registrasi admin dilakukan manual oleh pemilik toko.
+        </p>
       </div>
     </div>
   );
